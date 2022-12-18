@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "type": "cargo",
+            "name": "tauri dev",
+            "cargoArgs": ["tauri", "dev"]
+        },
+
+    ]
+}
