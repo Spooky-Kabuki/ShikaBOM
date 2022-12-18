@@ -1,38 +1,40 @@
-# create-svelte
+# Bomist Nu
+WIP name, this project is supposed to get a new name but will replace BOMIST
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+## Prereqs
+See: https://tauri.app/v1/guides/getting-started/prerequisites
+### MacOS
+1. Have x-code installed
+2. Have rust installed
+3. Have npm/node installed
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
+### Arch Linux
+1. Install prereqs
+```shell
+sudo pacman -Syu
+sudo pacman -S --needed \
+webkit2gtk \
+base-devel \
+curl \
+wget \
+openssl \
+appmenu-gtk-module \
+gtk3 \
+libappindicator-gtk3 \
+librsvg \
+libvips
 ```
 
-## Developing
+2. Install rust
+3. Install node/npm
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Quick Start Setup
+This assumes you have this repo that you're ready to run
 
-```bash
-npm run dev
+1. ``npm install --save-dev @sveltejs/adapter-static@next``
+2. ``cargo install tauri-cli``
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+## Run the project
+``cargo tauri dev``
+Live updates should happen after this, no need to re-run unless you've stopped the app.
+The Jetbrains Fleet build config is already configured for the build command.
