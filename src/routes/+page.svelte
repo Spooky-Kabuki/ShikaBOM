@@ -1,13 +1,15 @@
 <script>
-    import Greet from '../lib/Greet.svelte'
-    import Part from '../lib/Part.svelte'
     import PartTable from '../lib/PartTable.svelte'
+
+    function console_log() {
+        console.log("TESTING");
+    }
 
 </script>
 
 <div class="headerbar">
     <h1>Parts</h1>
-    <button>Create</button>
+    <button on:click={console_log}>Create</button>
     <button>Modify</button>
 </div>
 <PartTable />

@@ -1,15 +1,10 @@
 <script>
     import SvelteTable from "svelte-table";
+    import { invoke } from '@tauri-apps/api/tauri'
 
     let selection = {}
 
-    let rows = [
-        { part_number: "08053A331JAT2A", mfg: "AVX", desc: "Cap Ceramic 330pF 25V C0G 5% SMD 0805 125°C Paper T/R",label: "Capacitor", package: "0805", value: "330 pF", tolerance: null },
-        { part_number: "1623022-1", mfg: "TE Connectivity / AMP", desc: "Res Thick Film 0603 10K Ohm 5% 1/10W +/- 200ppm/°C Molded SMD SMD", label: "Resistor", package: "0603", value: "330 pF", tolerance: null },
-        { part_number: "25SVPF47M", mfg: "Panasonic", desc: "Cap Aluminum Polymer 47uF 25VDC 20%( 6.3 X 5.9mm) SMD 0.03 Ohm 2800mA 5000h 105C T/R", label: "Capacitor", package: "Radial, Can - SMD", value: "47.0 μF", tolerance: 20}
-
-      // etc...
-    ];
+    let rows = [];
 
     // define column configs
     const columns = [
@@ -19,22 +14,20 @@
             value: v => v.part_number,
             sortable: true,
             filterOptions: rows => {
-              // generate groupings of 0-10, 10-20 etc...
-              let nums = {};
-              return Object.values(nums);
+              return Object.values({});
             },
             filterValue: v => Math.floor(v.id / 10),
             headerClass: "text-left",
         },
         {
-            key: "mfg",
+            key: "manufacturer",
             title: "Manufacturer",
-            value: v => v.mfg,
+            value: v => v.manufacturer,
             sortable: true,
             filterOptions: rows => {
                 return Object.values({})
             },
-            filterValue: v => v.mfg.charAt(0).toLowerCase(),
+            filterValue: v => v.manufacturer.charAt(0).toLowerCase(),
         },
         {
             key: "package",
@@ -71,6 +64,14 @@
             filterOptions: {},
         }
     ];
+
+    async function fetchPartData() {
+        console.log("DATA IS BEING REQUESTED");
+        let json_rows = await invoke('fetch_part_data');
+        rows = JSON.parse(json_rows.toString());
+        console.log(rows)
+    }
 </script>
 
-<SvelteTable columns="{columns}" rows="{rows}" selectOnClick={true}></SvelteTable>
+<button on:click={fetchPartData}>Refresh Data</button>
+<SvelteTable columns="{columns}" rows="{rows}" selectOnClick={true} on:load={fetchPartData}></SvelteTable>
