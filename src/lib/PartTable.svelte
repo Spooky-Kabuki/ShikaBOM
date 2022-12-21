@@ -3,7 +3,7 @@
     import { invoke } from '@tauri-apps/api/tauri'
 
     let selection = {}
-
+    let selectionSingle = [];
     let rows = [];
 
     // define column configs
@@ -59,19 +59,42 @@
             key: "tolerance",
             title: "Tolerance",
             value: v => v.tolerance,
-            renderValue: v => v.tolerance != null ? v.tolerance : "N/A",
+            renderValue: v => v.tolerance !== 0.0 ? v.tolerance : "N/A",
             sortable: true,
             filterOptions: {},
         }
     ];
 
     async function fetchPartData() {
-        console.log("DATA IS BEING REQUESTED");
         let json_rows = await invoke('fetch_part_data');
         rows = JSON.parse(json_rows.toString());
-        console.log(rows)
     }
 </script>
 
 <button on:click={fetchPartData}>Refresh Data</button>
-<SvelteTable columns="{columns}" rows="{rows}" selectOnClick={true} on:load={fetchPartData}></SvelteTable>
+<pre>Selection: [{selectionSingle.join(", ")}]</pre>
+<SvelteTable
+    columns="{columns}"
+    rows="{rows}"
+    selectOnClick="{true}"
+    rowKey="part_number"
+    bind:selected={selectionSingle}
+    selectSingle={true}
+    classNameTable="table"
+    classNameThead="table-info"
+    classNameRowSelected="row-selected"
+/>
+
+<style>
+    :global(.row-expanded) {
+        background-color: #151826;
+        color: #fff;
+        cursor: crosshair;
+    }
+    :global(.expanded-content) {
+        background-color: #151826;
+    }
+    :global(.row-selected) {
+        background-color: #f8c;
+    }
+</style>

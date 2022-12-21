@@ -48,20 +48,14 @@ fn fetch_part_data() -> String {
     let mut parts: Vec<Part> = Vec::new();
     for row in rows {
         let mut part = Part {
-            part_number: row.get("partnumber"),
-            manufacturer: row.get("manufacturer"),
-            description: row.get("description"),
-            label: row.get("label"),
-            package: row.get("package"),
-            value: row.get("value"),
-            tolerance: 10.0 //row.get("tolerance")
+            part_number: row.try_get("partnumber").unwrap_or("".to_string()), //this cannot be null
+            manufacturer: row.try_get("manufacturer").unwrap_or("".to_string()),
+            description: row.try_get("description").unwrap_or("".to_string()),
+            label: row.try_get("label").unwrap_or("".to_string()),
+            package: row.try_get("package").unwrap_or("".to_string()),
+            value: row.try_get("value").unwrap_or("".to_string()),
+            tolerance: row.try_get("tolerance").unwrap_or(0.0)
         };
-        // let tol_attempt = match row.try_get("tolerance") {
-        //     Error(error) => 0.0,
-        //     T(value) => value
-        // };
-        // //if(tol_attempt.ty)
-
         parts.push(part);
     };
     return serde_json::to_string(&parts).unwrap();
