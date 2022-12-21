@@ -1,5 +1,5 @@
 {
-	"name": "bomistnu",
+	"name": "ShikaBOM",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
@@ -30,6 +30,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@tauri-apps/api": "^1.2.0"
+		"@tauri-apps/api": "^1.2.0",
+		"svelte-table": "^0.5.2"
 	}
 }

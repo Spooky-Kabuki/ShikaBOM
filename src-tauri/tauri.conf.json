@@ -6,7 +6,7 @@
     "distDir": "../build"
   },
   "package": {
-    "productName": "bomistnu",
+    "productName": "ShikaBOM",
     "version": "0.1.0"
   },
   "tauri": {
@@ -57,7 +57,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "bomistnu",
+        "title": "ShikaBOM",
         "width": 800
       }
     ]

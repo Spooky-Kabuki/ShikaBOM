@@ -1,9 +1,23 @@
 <script>
-    import Greet from '../lib/Greet.svelte'
-    import Part from '../lib/Part.svelte'
+    import PartTable from '../lib/PartTable.svelte'
+
+    function console_log() {
+        console.log("TESTING");
+    }
+
 </script>
 
-<h1>Welcome to SvelteKit</h1>
-<Greet />
-<Part />
-<p>Visit <a href="https://kabuki.dev">kabuki.dev</a> to visit a site nobody reads</p>
+<div class="headerbar">
+    <h1>Parts</h1>
+    <button on:click={console_log}>Create</button>
+    <button>Modify</button>
+</div>
+<PartTable />
+
+<style>
+    .headerbar {
+        display: inline-block;
+    }
+
+
+</style>

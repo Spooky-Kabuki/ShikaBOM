@@ -1,5 +1,5 @@
-# Bomist Nu
-WIP name, this project is supposed to get a new name but will replace BOMIST
+# ShikaBOM
+This project replaces BOMIST as a full ERP system really
 
 ## Prereqs
 See: https://tauri.app/v1/guides/getting-started/prerequisites
