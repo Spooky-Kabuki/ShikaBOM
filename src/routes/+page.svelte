@@ -3,9 +3,14 @@
     import { Modals, closeModal } from 'svelte-modals'
     import { openModal } from 'svelte-modals'
     import NewPartModal from "$lib/NewPartModal.svelte";
+	import ModifyPartModal from '$lib/ModifyPartModal.svelte';
     function handleCreatePart() {
         openModal(NewPartModal)
     }
+    function handleModifyPart() {
+        openModal(ModifyPartModal, {partNumber: export_pn})
+    }
+    let export_pn = "";
 </script>
 
 <Modals>
@@ -19,9 +24,9 @@
 <div class="headerbar">
     <h1>Parts</h1>
     <button on:click={handleCreatePart}>Create</button>
-    <button>Modify</button>
+    <button on:click={handleModifyPart}>Modify</button>
 </div>
-<PartTable />
+<PartTable bind:selected_pn={export_pn}/>
 
 <style>
     .headerbar {

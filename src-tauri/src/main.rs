@@ -4,7 +4,7 @@
 )]
 
 mod parts;
-use parts::{fetch_part_data, get_mfg, add_new_part};
+use parts::{fetch_part_data, get_mfg, add_new_part, retrieve_part, modify_part};
 
 mod db;
 
@@ -19,7 +19,7 @@ fn print_to_console(s: &str) {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![print_to_console, get_mfg, fetch_part_data, add_new_part])
+        .invoke_handler(tauri::generate_handler![print_to_console, get_mfg, fetch_part_data, add_new_part, retrieve_part, modify_part])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
