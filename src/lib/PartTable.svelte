@@ -6,6 +6,9 @@
     let selectionSingle = [];
     let rows = [];
 
+    export let selected_pn = selectionSingle.join(", ");
+    $: selected_pn = selectionSingle.join(", ");
+
     // define column configs
     const columns = [
         {
