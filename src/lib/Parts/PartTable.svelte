@@ -68,13 +68,14 @@
         }
     ];
 
-    async function fetchPartData() {
+    export async function fetchPartData() {
         let json_rows = await invoke('fetch_part_data');
         rows = JSON.parse(json_rows.toString());
     }
 </script>
 
-<button on:click={fetchPartData}>Refresh Data</button>
+
+
 <pre>Selection: [{selectionSingle.join(", ")}]</pre>
 <SvelteTable
     columns="{columns}"
