@@ -18,7 +18,7 @@ struct Part {
 pub fn get_mfg(pn: &str) -> String {
     let mut client = postgres_init();
     let row = client.query_one("SELECT manufacturer from parts WHERE partnumber = $1", &[&pn]).unwrap();
-    client.close();
+    let _ = client.close();
     return row.get("manufacturer");
 }
 
@@ -61,7 +61,7 @@ pub fn add_new_part(inpart: &str) {
         &parsed_part.tolerance
         ],
     ).unwrap();
-    client.close();
+    let _ = client.close();
     return;
 }
 
@@ -78,7 +78,7 @@ pub fn retrieve_part(pn: &str) -> String {
         value: Some(row.try_get("value").unwrap_or("".to_string())),
         tolerance: Some(row.try_get("tolerance").unwrap_or("".to_string()))
     };
-    client.close();
+    let _ = client.close();
     return serde_json::to_string(&part).unwrap();
 }
 
@@ -101,6 +101,6 @@ pub fn modify_part(inpart: &str) {
         &parsed_part.part_number
         ],
     ).unwrap();
-    client.close();
+    let _ = client.close();
     return;
 }
