@@ -1,6 +1,7 @@
 <script>
     import { Modals, closeModal } from 'svelte-modals'
     import PartView from "$lib/Parts/PartView.svelte";
+    import StorageView from "$lib/Storage/StorageView.svelte";
 
     export let activeTab = "parts";
 
@@ -22,9 +23,7 @@
 {#if activeTab === 'parts'}
     <PartView />
 {:else if activeTab === 'storage'}
-    <div class="headerbar">
-        <h1>Storage</h1>
-    </div>
+    <StorageView />
 {:else}
     <div class="headerbar">
         <h1>No tab selected</h1>
