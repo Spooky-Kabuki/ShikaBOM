@@ -101,17 +101,4 @@
     :global(.row-selected) {
         background-color: #f8c;
     }
-    button {
-        background-color: transparent;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 10px;
-        transition: background-color 0.3s ease;
-        border-radius: 15px;
-    }
-
-    button:hover {
-        background-color: #ddd;
-    }
 </style>
