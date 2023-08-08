@@ -2,6 +2,7 @@
     import SvelteTable from "svelte-table";
     import { invoke } from '@tauri-apps/api/tauri'
 
+    //TODO: Don't spend much time on the GUI, looks like there's better libraries out there
     let selection = {}
     let selectionSingle = [];
     let rows = [];
@@ -23,48 +24,30 @@
             headerClass: "text-left",
         },
         {
-            key: "manufacturer",
-            title: "Manufacturer",
-            value: v => v.manufacturer,
+            key: "location",
+            title: "Storage Location",
+            value: v => v.location,
             sortable: true,
             filterOptions: rows => {
                 return Object.values({})
             },
-            filterValue: v => v.manufacturer.charAt(0).toLowerCase(),
+            filterValue: v => v.location.charAt(0).toLowerCase(),
         },
         {
-            key: "package",
-            title: "Package",
-            value: v => v.package,
+            key: "quantity",
+            title: "Quantity",
+            value: v => v.quantity,
+            renderValue: v => v.quantity,
             sortable: true,
-            filterOptions: rows => {
-                return Object.values({});
-            },
-            filterValue: v => v.package.charAt(0).toLowerCase(),
+            filterOptions: {},
         },
         {
-            key: "label",
-            title: "Label",
-            value: v => v.label,
-            renderValue: v => v.label.charAt(0).toUpperCase() + v.label.substring(1), // capitalize
+            key: "loc_id",
+            title: "Location ID",
+            value: v => v.loc_id,
+            renderValue: v => v.loc_id, // capitalize
             sortable: true,
             filterOptions: ["Capacitor", "Resistor"], // provide array
-        },
-        {
-            key: "value",
-            title: "Value",
-            value: v => v.value,
-            renderValue: v => v.value,
-            sortable: true,
-            filterOptions: {},
-        },
-        {
-            key: "tolerance",
-            title: "Tolerance",
-            value: v => v.tolerance,
-            renderValue: v => v.tolerance !== 0.0 ? v.tolerance : "N/A",
-            sortable: true,
-            filterOptions: {},
         }
     ];
 
@@ -100,18 +83,5 @@
     }
     :global(.row-selected) {
         background-color: #f8c;
-    }
-    button {
-        background-color: transparent;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 10px;
-        transition: background-color 0.3s ease;
-        border-radius: 15px;
-    }
-
-    button:hover {
-        background-color: #ddd;
     }
 </style>
