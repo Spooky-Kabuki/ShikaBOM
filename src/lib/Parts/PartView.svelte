@@ -9,7 +9,9 @@ function handleCreatePart() {
     openModal(NewPartModal)
 }
 function handleModifyPart() {
-    openModal(ModifyPartModal, {partNumber: export_pn})
+    if(export_pn !== "") {
+        openModal(ModifyPartModal, {partNumber: export_pn})
+    }
 }
 
 let export_pn = "";
