@@ -1,9 +1,12 @@
 <script>
     import { closeModal } from 'svelte-modals'
     import { invoke } from '@tauri-apps/api/tauri'
+	import { onMount } from 'svelte';
 
     // provided by Modals
     export let isOpen
+
+    export let partNumber;
 
     async function onSubmit(e) {
         const formData = new FormData(e.target);
@@ -16,15 +19,30 @@
         let s = JSON.stringify(data)
         let inpart = s;
         await invoke('print_to_console', {s});
-        await invoke('add_new_part', {inpart});
+        await invoke('modify_part', {inpart});
         closeModal()
     }
+    async function loadInfo(pn) {
+        let part = await invoke('retrieve_part', {pn});
+        let p = JSON.parse(part);
+        document.getElementById("part_number").value = p.part_number;
+        document.getElementById("manufacturer").value = p.manufacturer;
+        document.getElementById("description").value = p.description;
+        document.getElementById("label").value = p.label;
+        document.getElementById("package").value = p.package;
+        document.getElementById("value").value = p.value;
+        document.getElementById("tolerance").value = p.tolerance;
+    }
+
+    onMount(async () => {
+        await loadInfo(partNumber);
+    });
 </script>
 
 {#if isOpen}
     <div role="dialog" class="modal">
         <div class="contents">
-            <h2>Create a part</h2>
+            <h2>Modify a part</h2>
             <form on:submit|preventDefault={onSubmit}>
                 <div>
                     <label for="name">Part Number</label>
@@ -110,5 +128,18 @@
 
     form > div + * {
         margin-top: 10px;
+    }
+    button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 10px;
+        transition: background-color 0.3s ease;
+        border-radius: 15px;
+    }
+
+    button:hover {
+        background-color: #ddd;
     }
 </style>

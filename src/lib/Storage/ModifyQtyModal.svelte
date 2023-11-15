@@ -1,7 +1,7 @@
 <script>
     import { closeModal } from 'svelte-modals'
     import { invoke } from '@tauri-apps/api/tauri'
-	import { onMount } from 'svelte';
+    import { onMount } from 'svelte';
 
     // provided by Modals
     export let isOpen
@@ -14,24 +14,25 @@
         const data = {};
         for (let field of formData) {
             const [key, value] = field;
-            data[key] = value;
+            //Check if the value is a number
+            if (key === "quantity") {
+                data[key] = Number(value);
+            }
+            else {
+                data[key] = value;
+            }
         }
         let s = JSON.stringify(data)
         let inpart = s;
         await invoke('print_to_console', {s});
-        await invoke('modify_part', {inpart});
+        await invoke('modify_qty', {inpart});
         closeModal()
     }
     async function loadInfo(pn) {
-        let part = await invoke('retrieve_part', {pn});
-        let p = JSON.parse(part);
+        let qty = await invoke('retrieve_qty', {pn});
+        let p = JSON.parse(qty);
         document.getElementById("part_number").value = p.part_number;
-        document.getElementById("manufacturer").value = p.manufacturer;
-        document.getElementById("description").value = p.description;
-        document.getElementById("label").value = p.label;
-        document.getElementById("package").value = p.package;
-        document.getElementById("value").value = p.value;
-        document.getElementById("tolerance").value = p.tolerance;
+        document.getElementById("quantity").value = p.quantity;
     }
 
     onMount(async () => {
@@ -46,31 +47,11 @@
             <form on:submit|preventDefault={onSubmit}>
                 <div>
                     <label for="name">Part Number</label>
-                    <input type="text" id="part_number" name="part_number" value=""/>
+                    <input type="text" id="part_number" name="part_number" value="" readonly  />
                 </div>
                 <div>
-                    <label for="name">Manufacturer</label>
-                    <input type="text" id="manufacturer" name="manufacturer" value=""/>
-                </div>
-                <div>
-                    <label for="name">Description</label>
-                    <input type="text" id="description" name="description" value=""/>
-                </div>
-                <div>
-                    <label for="name">Label</label>
-                    <input type="text" id="label" name="label" value=""/>
-                </div>
-                <div>
-                    <label for="name">Package</label>
-                    <input type="text" id="package" name="package" value=""/>
-                </div>
-                <div>
-                    <label for="name">Value</label>
-                    <input type="text" id="value" name="value" value=""/>
-                </div>
-                <div>
-                    <label for="name">Tolerance</label>
-                    <input type="number" id="tolerance" name="tolerance" value=0/>
+                    <label for="name">Quantity</label>
+                    <input type="number" id="quantity" name="quantity" value=0/>
                 </div>
                 <button type="submit">Submit</button>
             </form>
@@ -128,5 +109,18 @@
 
     form > div + * {
         margin-top: 10px;
+    }
+    button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 10px;
+        transition: background-color 0.3s ease;
+        border-radius: 15px;
+    }
+
+    button:hover {
+        background-color: #ddd;
     }
 </style>
