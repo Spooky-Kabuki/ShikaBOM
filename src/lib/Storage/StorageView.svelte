@@ -7,9 +7,9 @@
 
 <div class="headerbar">
     <h1>Storage</h1>
-    <button>Create</button>
-    <button>Modify</button>
-    <button>Refresh Data</button>
+    <button>Create New Storage Location</button>
+    <button>Modify Part Count</button>
+    <button on:click={storageTableComponent.fetchStorageData}>Refresh Data</button>
 </div>
 <StorageTable bind:this={storageTableComponent}/>
 

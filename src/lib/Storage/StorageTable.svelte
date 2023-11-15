@@ -47,12 +47,14 @@
             value: v => v.loc_id,
             renderValue: v => v.loc_id, // capitalize
             sortable: true,
-            filterOptions: ["Capacitor", "Resistor"], // provide array
+            filterOptions: {},
         }
     ];
 
     export async function fetchStorageData() {
         let json_rows = await invoke('fetch_storage_data');
+        let s = JSON.stringify(json_rows);
+        await invoke('print_to_console', {s});
         rows = JSON.parse(json_rows.toString());
     }
 </script>
