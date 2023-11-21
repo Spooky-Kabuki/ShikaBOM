@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
     import { closeModal } from 'svelte-modals'
     import { invoke } from '@tauri-apps/api/tauri'
 
     // provided by Modals
-    export let isOpen
+    export let isOpen: boolean
 
     async function onSubmit(e) {
         const formData = new FormData(e.target);

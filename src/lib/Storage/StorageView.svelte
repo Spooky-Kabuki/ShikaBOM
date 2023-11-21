@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
 import StorageTable from "$lib/Storage/StorageTable.svelte";
 import {openModal} from "svelte-modals";
 import ModifyQtyModal from "$lib/Storage/ModifyQtyModal.svelte";
 
-let storageTableComponent;
+let storageTableComponent: StorageTable
 function handleModifyQty() {
     if(export_pn !== "") {
         openModal(ModifyQtyModal, {partNumber: export_pn});

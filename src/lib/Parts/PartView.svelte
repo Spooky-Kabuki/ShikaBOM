@@ -1,10 +1,10 @@
-<script>
+<script lang="ts">
 import PartTable from "$lib/Parts/PartTable.svelte";
 import {openModal} from "svelte-modals";
 import NewPartModal from "$lib/Parts/NewPartModal.svelte";
 import ModifyPartModal from "$lib/Parts/ModifyPartModal.svelte";
 
-let partTableComponent;
+let partTableComponent: PartTable;
 function handleCreatePart() {
     openModal(NewPartModal)
 }

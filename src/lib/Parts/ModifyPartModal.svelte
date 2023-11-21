@@ -1,15 +1,15 @@
-<script>
+<script lang="ts">
     import { closeModal } from 'svelte-modals'
     import { invoke } from '@tauri-apps/api/tauri'
 	import { onMount } from 'svelte';
 
     // provided by Modals
-    export let isOpen
+    export let isOpen: boolean;
 
-    export let partNumber;
+    export let partNumber: string;
 
-    async function onSubmit(e) {
-        const formData = new FormData(e.target);
+    async function onSubmit(e: SubmitEvent) {
+        const formData = new FormData(e.target as HTMLFormElement);
 
         const data = {};
         for (let field of formData) {
@@ -22,16 +22,23 @@
         await invoke('modify_part', {inpart});
         closeModal()
     }
-    async function loadInfo(pn) {
-        let part = await invoke('retrieve_part', {pn});
+    async function loadInfo(pn: string) {
+        let part: string = await invoke('retrieve_part', {pn});
         let p = JSON.parse(part);
-        document.getElementById("part_number").value = p.part_number;
-        document.getElementById("manufacturer").value = p.manufacturer;
-        document.getElementById("description").value = p.description;
-        document.getElementById("label").value = p.label;
-        document.getElementById("package").value = p.package;
-        document.getElementById("value").value = p.value;
-        document.getElementById("tolerance").value = p.tolerance;
+        setValue("part_number", p.part_number);
+        setValue("manufacturer", p.manufacturer);
+        setValue("description", p.description);
+        setValue("label", p.label);
+        setValue("package", p.package);
+        setValue("value", p.value);
+        setValue("tolerance", p.tolerance);
+    }
+
+    function setValue(id: string, value: string) {
+        let el = document.getElementById(id);
+        if (el) {
+            (el as HTMLInputElement).value = value;
+        }
     }
 
     onMount(async () => {
