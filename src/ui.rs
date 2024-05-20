@@ -6,10 +6,13 @@ use ratatui::{
     widgets::*,
     Frame,
 };
+
 use ratatui::style::{Modifier, Stylize};
 
 use ratatui::style::palette::tailwind;
 use unicode_width::UnicodeWidthStr;
+
+use crate::parts::Part;
 
 
 use crate::app::{App, CurrentScreen};
@@ -34,9 +37,14 @@ pub fn ui(f: &mut Frame, app: &App) {
     // let b = Block::default()
     //     .borders(Borders::ALL);
     // f.render_widget(b, chunks[1]);
-    let rows = [Row::new(vec!["Cell1", "Cell2", "Cell3"])];
+    //let rows = [Row::new(vec!["Cell1", "Cell2", "Cell3"])];
+    //TODO: We don't want this running so often.
+    let rows = create_table_rows();
 // Columns widths are constrained in the same way as Layout...
     let widths = [
+        Constraint::Length(20),
+        Constraint::Length(20),
+        Constraint::Length(20),
         Constraint::Length(20),
         Constraint::Length(20),
         Constraint::Length(20),
@@ -51,17 +59,18 @@ pub fn ui(f: &mut Frame, app: &App) {
         .column_spacing(1)
         .style(Style::new().blue())
         .header(
-            Row::new(vec!["Name", "Address", "Email"])
+            //TODO: Bring this in from parts.rs
+            Row::new(vec!["Part Number", "Manufacturer", "Package", "Label", "Value", "Tolerance"])
                 .style(header_style)
                 // To add space between the header and the rest of the rows, specify the margin
                 .bottom_margin(1),
         )
         // It has an optional footer, which is simply a Row always visible at the bottom.
-        .footer(Row::new(vec!["Updated on Dec 28"]))
+        .footer(Row::new(vec!["Refreshed last at: 2021-09-01 12:34:56"]))
         // As any other widget, a Table can be wrapped in a Block.
         .block(Block::default().title("Table"))
         // The selected row and its content can also be styled.
-        .highlight_style(Style::new().reversed())
+        .highlight_style(selected_style)
         // ...and potentially show a symbol in front of the selection.
         .highlight_symbol(">>");
         //.border_style(Style::new().fg(Color::Cyan))
@@ -71,4 +80,21 @@ pub fn ui(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red));
     f.render_widget(c, chunks[2]);
+}
+
+fn create_table_rows() -> Vec<Row<'static>> {
+    let parts = crate::parts::fetch_part_data();
+    let mut rows: Vec<Row> = Vec::new();
+    for part in parts {
+        let row = Row::new(vec![
+            part.part_number,
+            part.manufacturer.unwrap_or("".to_string()),
+            part.package.unwrap_or("".to_string()),
+            part.label.unwrap_or("".to_string()),
+            part.value.unwrap_or("".to_string()),
+            part.tolerance.unwrap_or("".to_string()),
+        ]);
+        rows.push(row);
+    }
+    return rows;
 }

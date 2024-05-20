@@ -2,6 +2,8 @@ mod tui;
 mod errors;
 mod app;
 mod ui;
+mod parts;
+mod db;
 
 use app::App;
 
