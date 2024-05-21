@@ -79,7 +79,54 @@ pub fn ui(f: &mut Frame, app: &App) {
     let c = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red));
-    f.render_widget(c, chunks[2]);
+    let current_keys_hint = {
+        match app.current_screen {
+            CurrentScreen::Parts => Span::styled(
+                "(q) to quit / (n) to make new part",
+                Style::default().fg(Color::Red),
+            ),
+        }
+    };
+    let key_notes_footer = Paragraph::new(Line::from(current_keys_hint))
+        .block(c);
+    f.render_widget(key_notes_footer, chunks[2]);
+
+    let popup_block = Block::default()
+        .title("Enter new part information:")
+        .borders(Borders::ALL)
+        .style(Style::default().bg(Color::Black));
+
+    let area = centered_rect(35, 60, f.size());
+    let clear = Clear::default();
+    f.render_widget(clear, area);
+    f.render_widget(popup_block, area);
+    // ANCHOR_END: editing_popup
+
+    // ANCHOR: popup_layout
+    let popup_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Percentage(100/6),
+            Constraint::Percentage(100/6),
+            Constraint::Percentage(100/6),
+            Constraint::Percentage(100/6),
+            Constraint::Percentage(100/6),
+            Constraint::Percentage(100/6)
+        ])
+        .split(area);
+    let mut part_number_b = Block::default().title("Part Number").borders(Borders::ALL);
+    let mut mfg_b = Block::default().title("Manufacturer").borders(Borders::ALL);
+    let mut package_b = Block::default().title("Package").borders(Borders::ALL);
+    let mut label_b = Block::default().title("Label").borders(Borders::ALL);
+    let mut value_b = Block::default().title("Value").borders(Borders::ALL);
+    let mut tolerance_b = Block::default().title("Tolerance").borders(Borders::ALL);
+    f.render_widget(part_number_b, popup_chunks[0]);
+    f.render_widget(mfg_b, popup_chunks[1]);
+    f.render_widget(package_b, popup_chunks[2]);
+    f.render_widget(label_b, popup_chunks[3]);
+    f.render_widget(value_b, popup_chunks[4]);
+    f.render_widget(tolerance_b, popup_chunks[5]);
 }
 
 fn create_table_rows() -> Vec<Row<'static>> {
@@ -97,4 +144,26 @@ fn create_table_rows() -> Vec<Row<'static>> {
         rows.push(row);
     }
     return rows;
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    // Cut the given rectangle into three vertical pieces
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    // Then cut the middle vertical piece into three width-wise pieces
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1] // Return the middle chunk
 }
