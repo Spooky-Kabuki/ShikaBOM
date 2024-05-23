@@ -17,6 +17,8 @@ use crossterm::{
     },
 };
 use crossterm::event::KeyEvent;
+use crate::app::CurrentScreen::Parts;
+use crate::parts;
 
 use crate::ui::ui;
 
@@ -24,15 +26,60 @@ pub enum CurrentScreen {
     Parts
 }
 
-pub struct App {
-    pub current_screen: CurrentScreen,
-    pub exit: bool,
+pub enum PartsSubState {
+    Main,
+    NewPart
 }
 
+pub struct App {
+    pub current_screen: CurrentScreen,
+    pub parts_sub_state: PartsSubState,
+    pub currently_editing_part: CurrentlyEditingPart,
+    pub part_text: PartText,
+    pub exit: bool,
+}
+pub struct PartText {
+    pub part_number: String,
+    pub manufacturer: String,
+    pub package: String,
+    pub label: String,
+    pub value: String,
+    pub tolerance: String,
+}
+
+impl PartText {
+    fn clear(&mut self) {
+        self.part_number.clear();
+        self.manufacturer.clear();
+        self.package.clear();
+        self.label.clear();
+        self.value.clear();
+        self.tolerance.clear();
+    }
+}
+
+pub enum CurrentlyEditingPart {
+    PartNumber,
+    Manufacturer,
+    Package,
+    Label,
+    Value,
+    Tolerance,
+}
 impl App {
     pub fn new() -> App {
         App {
             current_screen: CurrentScreen::Parts,
+            parts_sub_state: PartsSubState::Main,
+            currently_editing_part: CurrentlyEditingPart::PartNumber,
+            part_text: PartText {
+                part_number: "".to_string(),
+                manufacturer: "".to_string(),
+                package: "".to_string(),
+                label: "".to_string(),
+                value: "".to_string(),
+                tolerance: "".to_string(),
+            },
             exit: false
         }
     }
@@ -58,11 +105,120 @@ impl App {
         }
     }
     fn handle_key_event(&mut self, key_event: KeyEvent) -> Result<()> {
-        match key_event.code {
-            KeyCode::Char('q') => self.exit(),
-            _ => {}
+        match self.current_screen {
+            CurrentScreen::Parts => {
+                self.handle_parts_keys(key_event);
+            }
         }
         Ok(())
+    }
+
+    fn handle_parts_keys(&mut self, key_event: KeyEvent) {
+        match self.parts_sub_state {
+            PartsSubState::Main => {
+                if(!self.handle_global_keys(key_event)) {
+                    match key_event.code {
+                        KeyCode::Char('n') => {
+                            self.parts_sub_state = PartsSubState::NewPart;
+                            self.part_text.clear();
+                            self.currently_editing_part = CurrentlyEditingPart::PartNumber;
+                        }
+                        _ => {}
+                    }
+                }
+            } //end of PartsSubState::Main
+            PartsSubState::NewPart => {
+                match key_event.code {
+                    KeyCode::Esc => {
+                        self.parts_sub_state = PartsSubState::Main;
+                    }
+                    KeyCode::Char(value) => {
+                        match self.currently_editing_part {
+                            CurrentlyEditingPart::PartNumber => {
+                                self.part_text.part_number.push(value);
+                            },
+                            CurrentlyEditingPart::Manufacturer => {
+                                self.part_text.manufacturer.push(value);
+                            },
+                            CurrentlyEditingPart::Package => {
+                                self.part_text.package.push(value);
+                            },
+                            CurrentlyEditingPart::Label => {
+                                self.part_text.label.push(value);
+                            },
+                            CurrentlyEditingPart::Value => {
+                                self.part_text.value.push(value);
+                            },
+                            CurrentlyEditingPart::Tolerance => {
+                                self.part_text.tolerance.push(value);
+                            },
+                        }
+                    },
+                    KeyCode::Tab => {
+                        match self.currently_editing_part {
+                            CurrentlyEditingPart::PartNumber => {
+                                self.currently_editing_part = CurrentlyEditingPart::Manufacturer;
+                            },
+                            CurrentlyEditingPart::Manufacturer => {
+                                self.currently_editing_part = CurrentlyEditingPart::Package;
+                            },
+                            CurrentlyEditingPart::Package => {
+                                self.currently_editing_part = CurrentlyEditingPart::Label;
+                            },
+                            CurrentlyEditingPart::Label => {
+                                self.currently_editing_part = CurrentlyEditingPart::Value;
+                            },
+                            CurrentlyEditingPart::Value => {
+                                self.currently_editing_part = CurrentlyEditingPart::Tolerance;
+                            },
+                            CurrentlyEditingPart::Tolerance => {
+                                self.currently_editing_part = CurrentlyEditingPart::PartNumber;
+                            },
+                        }
+                    },
+                    KeyCode::Backspace => {
+                        match self.currently_editing_part {
+                            CurrentlyEditingPart::PartNumber => {
+                                self.part_text.part_number.pop();
+                            },
+                            CurrentlyEditingPart::Manufacturer => {
+                                self.part_text.manufacturer.pop();
+                            },
+                            CurrentlyEditingPart::Package => {
+                                self.part_text.package.pop();
+                            },
+                            CurrentlyEditingPart::Label => {
+                                self.part_text.label.pop();
+                            },
+                            CurrentlyEditingPart::Value => {
+                                self.part_text.value.pop();
+                            },
+                            CurrentlyEditingPart::Tolerance => {
+                                self.part_text.tolerance.pop();
+                            },
+                        }
+                    },
+                    KeyCode::Enter => {
+                        parts::add_new_part_rat(&self.part_text);
+                        self.parts_sub_state = PartsSubState::Main;
+
+                    },
+                    _ => {}
+                }
+            } //end of PartsSubState::NewPart
+        }
+
+    }
+
+    // handles global key events when we don't want to override (e.g. quit)
+    fn handle_global_keys(&mut self, key_event: KeyEvent) -> bool {
+        match key_event.code {
+            KeyCode::Char('q') => {
+                self.exit();
+                true
+            }
+            _ => {false}
+        }
     }
 
     fn exit(&mut self) {

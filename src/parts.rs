@@ -1,5 +1,6 @@
 use crate::db::postgres_init;
 use serde::{Deserialize, Serialize};
+use crate::app::PartText;
 
 #[derive(Serialize, Deserialize)]
 pub struct Part {
@@ -62,6 +63,24 @@ pub fn add_new_part(inpart: &str) {
     let _ = client.close();
     return;
 }
+
+pub fn add_new_part_rat(new_part: &PartText) {
+    if(new_part.part_number == "".to_string()) {
+        return;
+    }
+    let mut client = postgres_init();
+    client.execute("INSERT INTO parts (partnumber, manufacturer, label, package, value, tolerance) VALUES ($1, $2, $3, $4, $5, $6)",
+                   &[
+                       &new_part.part_number,
+                       &new_part.manufacturer,
+                       &new_part.package,
+                       &new_part.label,
+                       &new_part.value,
+                       &new_part.tolerance
+                   ],
+    ).unwrap();
+}
+
 pub fn retrieve_part(pn: &str) -> String {
     let mut client = postgres_init();
     let row = client.query_one("SELECT * FROM parts WHERE partnumber = $1", &[&pn]).unwrap();

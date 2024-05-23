@@ -19,6 +19,7 @@ use crate::app::{App, CurrentScreen};
 
 // ANCHOR: method_sig
 pub fn ui(f: &mut Frame, app: &App) {
+    // TODO: this is just the parts view
     let mut table_state = TableState::default();
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -91,6 +92,25 @@ pub fn ui(f: &mut Frame, app: &App) {
         .block(c);
     f.render_widget(key_notes_footer, chunks[2]);
 
+    match app.current_screen {
+        CurrentScreen::Parts => {
+            match app.parts_sub_state {
+                crate::app::PartsSubState::NewPart => {
+                    render_new_part_popup(f, app);
+                }
+                _ => {}
+            }
+        },
+        _ => {}
+    }
+
+
+}
+
+
+fn render_new_part_popup(f: &mut Frame, app: &App) {
+    let highlighted_style = Style::default().fg(Color::White).bg(Color::Blue);
+
     let popup_block = Block::default()
         .title("Enter new part information:")
         .borders(Borders::ALL)
@@ -107,26 +127,59 @@ pub fn ui(f: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Percentage(100/6),
-            Constraint::Percentage(100/6),
-            Constraint::Percentage(100/6),
-            Constraint::Percentage(100/6),
-            Constraint::Percentage(100/6),
-            Constraint::Percentage(100/6)
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(16),
+            Constraint::Percentage(4),
         ])
         .split(area);
-    let mut part_number_b = Block::default().title("Part Number").borders(Borders::ALL);
+    let mut pn_b = Block::default().title("Part Number").borders(Borders::ALL);
     let mut mfg_b = Block::default().title("Manufacturer").borders(Borders::ALL);
-    let mut package_b = Block::default().title("Package").borders(Borders::ALL);
-    let mut label_b = Block::default().title("Label").borders(Borders::ALL);
-    let mut value_b = Block::default().title("Value").borders(Borders::ALL);
-    let mut tolerance_b = Block::default().title("Tolerance").borders(Borders::ALL);
-    f.render_widget(part_number_b, popup_chunks[0]);
-    f.render_widget(mfg_b, popup_chunks[1]);
-    f.render_widget(package_b, popup_chunks[2]);
-    f.render_widget(label_b, popup_chunks[3]);
-    f.render_widget(value_b, popup_chunks[4]);
-    f.render_widget(tolerance_b, popup_chunks[5]);
+    let mut pkg_b = Block::default().title("Package").borders(Borders::ALL);
+    let mut lbl_b = Block::default().title("Label").borders(Borders::ALL);
+    let mut val_b = Block::default().title("Value").borders(Borders::ALL);
+    let mut tol_b = Block::default().title("Tolerance").borders(Borders::ALL);
+
+    match app.currently_editing_part {
+        crate::app::CurrentlyEditingPart::PartNumber => {
+            pn_b = pn_b.style(highlighted_style);
+        }
+        crate::app::CurrentlyEditingPart::Manufacturer => {
+            mfg_b = mfg_b.style(highlighted_style);
+        }
+        crate::app::CurrentlyEditingPart::Package => {
+            pkg_b = pkg_b.style(highlighted_style);
+        }
+        crate::app::CurrentlyEditingPart::Label => {
+            lbl_b = lbl_b.style(highlighted_style);
+        }
+        crate::app::CurrentlyEditingPart::Value => {
+            val_b = val_b.style(highlighted_style);
+        }
+        crate::app::CurrentlyEditingPart::Tolerance => {
+            tol_b = tol_b.style(highlighted_style);
+        }
+    }
+    let pn_t = Paragraph::new(app.part_text.part_number.clone()).block(pn_b);
+    let mfg_t = Paragraph::new(app.part_text.manufacturer.clone()).block(mfg_b);
+    let pkg_t = Paragraph::new(app.part_text.package.clone()).block(pkg_b);
+    let lbl_t = Paragraph::new(app.part_text.label.clone()).block(lbl_b);
+    let val_t = Paragraph::new(app.part_text.value.clone()).block(val_b);
+    let tol_t = Paragraph::new(app.part_text.tolerance.clone()).block(tol_b);
+
+    f.render_widget(pn_t, popup_chunks[0]);
+    f.render_widget(mfg_t, popup_chunks[1]);
+    f.render_widget(pkg_t, popup_chunks[2]);
+    f.render_widget(lbl_t, popup_chunks[3]);
+    f.render_widget(val_t, popup_chunks[4]);
+    f.render_widget(tol_t, popup_chunks[5]);
+    let footer_text =  Span::styled("<ESC> to exit, <ENTER> to save", Style::default().fg(Color::Red));
+    let foot = Paragraph::new(Line::from(footer_text))
+        .block(Block::default().borders(Borders::NONE));
+    f.render_widget(foot, popup_chunks[6]);
 }
 
 fn create_table_rows() -> Vec<Row<'static>> {
