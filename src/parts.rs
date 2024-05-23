@@ -41,30 +41,8 @@ pub fn fetch_part_data() -> Vec<Part> {
     };
     return parts;
 }
-pub fn add_new_part(inpart: &str) {
-    let parsed_part: Part = serde_json::from_str(&inpart).unwrap();
-    if parsed_part.part_number == "".to_string() {
-        //TODO: Get logging setup
-        //println!("Part number cannot be empty!");
-        return;
-    }
-    let mut client = postgres_init();
-    client.execute("INSERT INTO parts (partnumber, manufacturer, description, label, package, value, tolerance) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-                   &[
-                       &parsed_part.part_number,
-                       &parsed_part.manufacturer,
-                       &parsed_part.description,
-                       &parsed_part.label,
-                       &parsed_part.package,
-                       &parsed_part.value,
-                       &parsed_part.tolerance
-                   ],
-    ).unwrap();
-    let _ = client.close();
-    return;
-}
 
-pub fn add_new_part_rat(new_part: &PartText) {
+pub fn add_new_part(new_part: &PartText) {
     if(new_part.part_number == "".to_string()) {
         return;
     }
@@ -81,29 +59,28 @@ pub fn add_new_part_rat(new_part: &PartText) {
     ).unwrap();
 }
 
-pub fn retrieve_part(pn: &str) -> String {
+pub fn retrieve_part(pn: &str) -> Part {
     let mut client = postgres_init();
     let row = client.query_one("SELECT * FROM parts WHERE partnumber = $1", &[&pn]).unwrap();
     let part = new_part_from_sql(row);
     let _ = client.close();
-    return serde_json::to_string(&part).unwrap();
+    return part;
 }
-pub fn modify_part(inpart: &str) {
-    let parsed_part: Part = serde_json::from_str(&inpart).unwrap();
-    if parsed_part.part_number == "".to_string() {
+pub fn modify_part(inpart: &Part) {
+    if inpart.part_number == "".to_string() {
         println!("Part number cannot be empty!");
         return;
     }
     let mut client = postgres_init();
     client.execute("UPDATE parts SET manufacturer = $1, description = $2, label = $3, package = $4, value = $5, tolerance = $6 WHERE partnumber = $7",
                    &[
-                       &parsed_part.manufacturer,
-                       &parsed_part.description,
-                       &parsed_part.label,
-                       &parsed_part.package,
-                       &parsed_part.value,
-                       &parsed_part.tolerance,
-                       &parsed_part.part_number
+                       &inpart.manufacturer,
+                       &inpart.description,
+                       &inpart.label,
+                       &inpart.package,
+                       &inpart.value,
+                       &inpart.tolerance,
+                       &inpart.part_number
                    ],
     ).unwrap();
     let _ = client.close();

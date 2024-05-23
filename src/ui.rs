@@ -11,6 +11,7 @@ use ratatui::style::{Modifier, Stylize};
 
 use ratatui::style::palette::tailwind;
 use unicode_width::UnicodeWidthStr;
+use crate::app;
 
 use crate::parts::Part;
 
@@ -20,7 +21,6 @@ use crate::app::{App, CurrentScreen};
 // ANCHOR: method_sig
 pub fn ui(f: &mut Frame, app: &App) {
     // TODO: this is just the parts view
-    let mut table_state = TableState::default();
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -40,7 +40,7 @@ pub fn ui(f: &mut Frame, app: &App) {
     // f.render_widget(b, chunks[1]);
     //let rows = [Row::new(vec!["Cell1", "Cell2", "Cell3"])];
     //TODO: We don't want this running so often.
-    let rows = create_table_rows();
+    let rows = create_table_rows(&app);
 // Columns widths are constrained in the same way as Layout...
     let widths = [
         Constraint::Length(20),
@@ -76,14 +76,14 @@ pub fn ui(f: &mut Frame, app: &App) {
         .highlight_symbol(">>");
         //.border_style(Style::new().fg(Color::Cyan))
         //.borders(Borders::ALL);
-    f.render_stateful_widget(table, chunks[1], &mut table_state);
+    f.render_stateful_widget(table, chunks[1], &mut app.part_table_state.clone());
     let c = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Red));
     let current_keys_hint = {
         match app.current_screen {
-            CurrentScreen::Parts => Span::styled(
-                "(q) to quit / (n) to make new part",
+            CurrentScreen::PartScreen => Span::styled(
+                "(q) to quit / (n) to make new part / (r) to refresh data / (e) to edit part",
                 Style::default().fg(Color::Red),
             ),
         }
@@ -93,9 +93,12 @@ pub fn ui(f: &mut Frame, app: &App) {
     f.render_widget(key_notes_footer, chunks[2]);
 
     match app.current_screen {
-        CurrentScreen::Parts => {
+        CurrentScreen::PartScreen => {
             match app.parts_sub_state {
-                crate::app::PartsSubState::NewPart => {
+                app::PartsSubState::NewPart => {
+                    render_new_part_popup(f, app);
+                }
+                app::PartsSubState::EditPart => {
                     render_new_part_popup(f, app);
                 }
                 _ => {}
@@ -182,17 +185,17 @@ fn render_new_part_popup(f: &mut Frame, app: &App) {
     f.render_widget(foot, popup_chunks[6]);
 }
 
-fn create_table_rows() -> Vec<Row<'static>> {
-    let parts = crate::parts::fetch_part_data();
+fn create_table_rows(app: &App) -> Vec<Row<'static>> {
+    let parts = &app.part_data;
     let mut rows: Vec<Row> = Vec::new();
     for part in parts {
         let row = Row::new(vec![
-            part.part_number,
-            part.manufacturer.unwrap_or("".to_string()),
-            part.package.unwrap_or("".to_string()),
-            part.label.unwrap_or("".to_string()),
-            part.value.unwrap_or("".to_string()),
-            part.tolerance.unwrap_or("".to_string()),
+            part.part_number.clone(),
+            part.manufacturer.clone().unwrap_or("".to_string()),
+            part.package.clone().unwrap_or("".to_string()),
+            part.label.clone().unwrap_or("".to_string()),
+            part.value.clone().unwrap_or("".to_string()),
+            part.tolerance.clone().unwrap_or("".to_string()),
         ]);
         rows.push(row);
     }
