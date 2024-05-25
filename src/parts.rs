@@ -1,10 +1,10 @@
 use crate::db::postgres_init;
 use serde::{Deserialize, Serialize};
-use crate::app::PartText;
 
 #[derive(Serialize, Deserialize)]
 pub struct Part {
     pub part_number: String,
+    pub total_qty: i32,
     pub manufacturer: Option<String>,
     pub description: Option<String>,
     pub label: Option<String>,
@@ -13,9 +13,16 @@ pub struct Part {
     pub tolerance: Option<String>,
 }
 
+pub struct PartStorage {
+    pub part_number: String,
+    pub location: String,
+    pub quantity: i32
+}
+
 fn new_part_from_sql(row: postgres::Row) -> Part {
     Part {
         part_number: row.try_get("partnumber").unwrap_or("".to_string()), //this cannot be null
+        total_qty: row.try_get("quantity").unwrap_or(0),
         manufacturer: Some(row.try_get("manufacturer").unwrap_or("".to_string())),
         description: Some(row.try_get("description").unwrap_or("".to_string())),
         label: Some(row.try_get("label").unwrap_or("".to_string())),
@@ -25,15 +32,9 @@ fn new_part_from_sql(row: postgres::Row) -> Part {
     }
 }
 
-pub fn get_mfg(pn: &str) -> String {
+pub fn fetch_all_parts() -> Vec<Part> {
     let mut client = postgres_init();
-    let row = client.query_one("SELECT manufacturer from parts WHERE partnumber = $1", &[&pn]).unwrap();
-    let _ = client.close();
-    return row.get("manufacturer");
-}
-pub fn fetch_part_data() -> Vec<Part> {
-    let mut client = postgres_init();
-    let rows = client.query("SELECT * FROM parts", &[]).unwrap();
+    let rows = client.query("select * from big_part_view", &[]).unwrap();
     let mut parts: Vec<Part> = Vec::new();
     for row in rows {
         let part = new_part_from_sql(row);
@@ -42,8 +43,16 @@ pub fn fetch_part_data() -> Vec<Part> {
     return parts;
 }
 
-pub fn add_new_part(new_part: &PartText) {
-    if(new_part.part_number == "".to_string()) {
+pub fn fetch_single_part(pn: &str) -> Part {
+    let mut client = postgres_init();
+    let row = client.query_one("select * from big_part_view where partnumber = $1", &[&pn]).unwrap();
+    let part = new_part_from_sql(row);
+    return part;
+}
+
+//Does not include quantity, this is just part information
+pub fn add_new_part(new_part: &Part) {
+    if new_part.part_number == "".to_string() {
         return;
     }
     let mut client = postgres_init();
@@ -57,15 +66,9 @@ pub fn add_new_part(new_part: &PartText) {
                        &new_part.tolerance
                    ],
     ).unwrap();
+    //TODO: Add initial quantity to part_storage
 }
 
-pub fn retrieve_part(pn: &str) -> Part {
-    let mut client = postgres_init();
-    let row = client.query_one("SELECT * FROM parts WHERE partnumber = $1", &[&pn]).unwrap();
-    let part = new_part_from_sql(row);
-    let _ = client.close();
-    return part;
-}
 pub fn modify_part(inpart: &Part) {
     if inpart.part_number == "".to_string() {
         println!("Part number cannot be empty!");
@@ -85,4 +88,32 @@ pub fn modify_part(inpart: &Part) {
     ).unwrap();
     let _ = client.close();
     return;
+}
+
+pub fn fetch_part_storage_data(pn: &str) -> Vec<PartStorage> {
+    let mut client = postgres_init();
+    let rows = client.query("select * from part_storage where partnumber = $1", &[&pn]).unwrap();
+    let mut part_stores: Vec<PartStorage> = Vec::new();
+    for row in rows {
+        let part = PartStorage {
+            part_number: row.try_get("partnumber").unwrap_or("".to_string()), //this cannot be null
+            location: row.try_get("storage_loc_name").unwrap_or("".to_string()),
+            quantity: row.try_get("quantity").unwrap_or(0)
+        };
+        part_stores.push(part);
+    };
+    return part_stores;
+
+}
+
+#[test]
+fn test_fetch_all_parts() {
+    let parts = fetch_all_parts();
+    assert!(!parts.is_empty());
+}
+
+#[test]
+fn test_fetch_single_part() {
+    let part = fetch_single_part("HFW1V2210H4R7K");
+    assert_eq!(part.part_number, "HFW1V2210H4R7K");
 }

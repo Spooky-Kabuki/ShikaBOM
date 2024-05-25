@@ -7,14 +7,7 @@ mod db;
 
 use app::App;
 
-use std::{error::Error, io};
-
-use ratatui::{
-    backend::{Backend}
-};
-
 use color_eyre::{
-    eyre::{bail, WrapErr},
     Result,
 };
 

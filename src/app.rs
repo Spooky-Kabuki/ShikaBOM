@@ -1,20 +1,14 @@
-use std::{error::Error, io};
 use color_eyre::eyre::Context;
 use color_eyre::Result;
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
+    backend::{Backend},
     Terminal,
 };
 use crossterm::{
     event::{
-        self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode,
+        self, Event, KeyCode,
         KeyEventKind,
-    },
-    execute,
-    terminal::{
-        disable_raw_mode, enable_raw_mode, EnterAlternateScreen,
-        LeaveAlternateScreen,
-    },
+    }
 };
 use crossterm::event::KeyEvent;
 use ratatui::widgets::TableState;
@@ -33,6 +27,18 @@ pub enum PartsSubState {
     EditPart,
 }
 
+pub struct PartScrollInfo {
+    pub scroll_position: usize,
+    pub scroll_length: u16
+}
+
+impl PartScrollInfo {
+    fn reset(&mut self) {
+        self.scroll_position = 0;
+        self.scroll_length = 0;
+    }
+}
+
 pub struct App {
     pub current_screen: CurrentScreen,
     pub parts_sub_state: PartsSubState,
@@ -42,9 +48,11 @@ pub struct App {
     pub part_data: Vec<Part>,
     pub show_details: bool,
     pub exit: bool,
+    pub part_scroll_info: PartScrollInfo
 }
 pub struct PartText {
     pub part_number: String,
+    pub total_qty: String,
     pub manufacturer: String,
     pub package: String,
     pub label: String,
@@ -56,6 +64,7 @@ pub struct PartText {
 impl PartText {
     fn clear(&mut self) {
         self.part_number.clear();
+        self.total_qty.clear();
         self.manufacturer.clear();
         self.package.clear();
         self.label.clear();
@@ -66,6 +75,7 @@ impl PartText {
 
     fn copy_from_db_part(&mut self, part: &Part) {
         self.part_number = part.part_number.clone();
+        self.total_qty = part.total_qty.to_string();
         self.manufacturer = part.manufacturer.clone().unwrap_or("".to_string());
         self.package = part.package.clone().unwrap_or("".to_string());
         self.label = part.label.clone().unwrap_or("".to_string());
@@ -76,6 +86,7 @@ impl PartText {
 
     fn copy_to_db_part(&self, part: &mut Part) {
         part.part_number = self.part_number.clone();
+        part.total_qty = self.total_qty.parse().unwrap(); //TODO: evaluate keeping this a number?
         part.manufacturer = Some(self.manufacturer.clone());
         part.package = Some(self.package.clone());
         part.label = Some(self.label.clone());
@@ -112,6 +123,7 @@ impl App {
             currently_editing_part: CurrentlyEditingPart::PartNumber,
             part_text: PartText {
                 part_number: "".to_string(),
+                total_qty: "0".to_string(),
                 manufacturer: "".to_string(),
                 package: "".to_string(),
                 label: "".to_string(),
@@ -123,6 +135,10 @@ impl App {
             part_data: Vec::new(),
             exit: false,
             show_details: false,
+            part_scroll_info: PartScrollInfo {
+                scroll_position: 0,
+                scroll_length: 0
+            }
         }
     }
 
@@ -159,7 +175,7 @@ impl App {
     fn handle_parts_keys(&mut self, key_event: KeyEvent) {
         match self.parts_sub_state {
             PartsSubState::Main => {
-                if(!self.handle_global_keys(key_event)) {
+                if !self.handle_global_keys(key_event) {
                     match key_event.code {
                         KeyCode::Char('n') => {
                             self.parts_sub_state = PartsSubState::NewPart;
@@ -175,7 +191,7 @@ impl App {
                                     self.part_text.clear();
                                     //Fill in part info
                                     let selected_pn = self.part_data[selected].part_number.clone();
-                                    let fetched_part = parts::retrieve_part(&selected_pn);
+                                    let fetched_part = parts::fetch_single_part(&selected_pn);
                                     self.part_text.copy_from_db_part(&fetched_part);
 
                                     self.parts_sub_state = PartsSubState::EditPart;
@@ -192,8 +208,9 @@ impl App {
                                     //Fill in part info for side panel
                                     //TODO: Make part text a big boi
                                     let selected_pn = self.part_data[selected].part_number.clone();
-                                    let fetched_part = parts::retrieve_part(&selected_pn);
+                                    let fetched_part = parts::fetch_single_part(&selected_pn);
                                     self.part_text.copy_from_db_part(&fetched_part);
+                                    self.part_scroll_info.reset();
                                     //Only show if we have data to display
                                     self.show_details();
                                 }
@@ -201,30 +218,45 @@ impl App {
                             }
                         }
                         KeyCode::Down => {
-                            match self.part_table_state.selected() {
-                                Some(selected) => {
-                                    if selected < self.part_data.len() - 1 {
-                                        self.part_table_state.select(Some(selected + 1));
+                            if !self.show_details {
+                                match self.part_table_state.selected() {
+                                    Some(selected) => {
+                                        if selected < self.part_data.len() - 1 {
+                                            self.part_table_state.select(Some(selected + 1));
+                                        }
+                                    }
+                                    None => {
+                                        self.part_table_state.select(Some(0));
                                     }
                                 }
-                                None => {
-                                    self.part_table_state.select(Some(0));
-                                }
+                                self.update_selected_part();
                             }
-                            self.update_selected_part();
+                            else {
+                                //TODO: scroll logic here
+                                //TODO: how do we get scroll length?
+                                self.part_scroll_info.scroll_position += 1;
+                            }
                         }
                         KeyCode::Up => {
-                            match self.part_table_state.selected() {
-                                Some(selected) => {
-                                    if selected > 0 {
-                                        self.part_table_state.select(Some(selected - 1));
+                            if !self.show_details {
+                                match self.part_table_state.selected() {
+                                    Some(selected) => {
+                                        if selected > 0 {
+                                            self.part_table_state.select(Some(selected - 1));
+                                        }
+                                    }
+                                    None => {
+                                        self.part_table_state.select(Some(0));
                                     }
                                 }
-                                None => {
-                                    self.part_table_state.select(Some(0));
+                                self.update_selected_part();
+                            }
+                            else {
+                                if self.part_scroll_info.scroll_position > 0 {
+                                    self.part_scroll_info.scroll_position -= 1;
                                 }
                             }
-                            self.update_selected_part();
+
                         }
                         _ => {}
                     }
@@ -305,7 +337,19 @@ impl App {
                         }
                     },
                     KeyCode::Enter => {
-                        parts::add_new_part(&self.part_text);
+                        //TODO: fix!!!!
+                        let mut new_part: Part = Part {
+                            part_number: "".to_string(),
+                            total_qty: 0,
+                            manufacturer: None,
+                            description: None,
+                            label: None,
+                            package: None,
+                            value: None,
+                            tolerance: None,
+                        };
+                        self.part_text.copy_to_db_part(&mut new_part);
+                        parts::add_new_part(&new_part);
                         self.parts_sub_state = PartsSubState::Main;
                         self.refresh_part_data();
 
@@ -387,6 +431,7 @@ impl App {
                         //update the part in SQL
                         let mut part = Part {
                             part_number: "".to_string(),
+                            total_qty: 0,
                             manufacturer: None,
                             description: None,
                             label: None,
@@ -422,7 +467,7 @@ impl App {
     }
 
     fn refresh_part_data(&mut self) {
-        self.part_data = parts::fetch_part_data();
+        self.part_data = parts::fetch_all_parts();
     }
 
     fn show_details(&mut self) {
@@ -433,7 +478,7 @@ impl App {
         match self.part_table_state.selected() {
             Some(selected) => {
                 let selected_pn = self.part_data[selected].part_number.clone();
-                let fetched_part = parts::retrieve_part(&selected_pn);
+                let fetched_part = parts::fetch_single_part(&selected_pn);
                 self.part_text.copy_from_db_part(&fetched_part);
             }
             None => {}

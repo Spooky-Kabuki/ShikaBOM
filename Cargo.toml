@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 color-eyre = "0.6.3"
 crossterm = { version = "0.27.0", features = ["event-stream"] }
-ratatui = "0.26.2"
+ratatui = { version = "0.26.2" , features = ["unstable-rendered-line-info"]}
 unicode-width = "0.1.12"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"

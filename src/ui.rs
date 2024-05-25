@@ -1,9 +1,7 @@
-use std::cmp::PartialEq;
-// ANCHOR: all
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::{Line, Span, Text},
+    text::{Line, Span},
     widgets::*,
     Frame,
 };
@@ -12,12 +10,7 @@ use ratatui::layout::Margin;
 use ratatui::style::{Modifier, Stylize};
 
 use ratatui::style::palette::tailwind;
-use unicode_width::UnicodeWidthStr;
 use crate::app;
-
-use crate::parts::Part;
-
-
 use crate::app::{App, CurrentScreen};
 
 // ANCHOR: method_sig
@@ -42,11 +35,13 @@ pub fn ui(f: &mut Frame, app: &App) {
 // Columns widths are constrained in the same way as Layout...
     let widths = [
         Constraint::Length(20),
+        Constraint::Length(11),
         Constraint::Length(20),
         Constraint::Length(20),
         Constraint::Length(20),
         Constraint::Length(20),
         Constraint::Length(20),
+
     ];
     let header_style = Style::default()
         .fg(tailwind::SLATE.c200)
@@ -59,7 +54,7 @@ pub fn ui(f: &mut Frame, app: &App) {
         .style(Style::new().blue())
         .header(
             //TODO: Bring this in from parts.rs
-            Row::new(vec!["Part Number", "Manufacturer", "Package", "Label", "Value", "Tolerance"])
+            Row::new(vec!["Part Number", "Total Qty", "Manufacturer", "Package", "Label", "Value", "Tolerance"])
                 .style(header_style)
                 // To add space between the header and the rest of the rows, specify the margin
                 .bottom_margin(1),
@@ -95,7 +90,7 @@ pub fn ui(f: &mut Frame, app: &App) {
             match app.parts_sub_state {
                 app::PartsSubState::Main => {
                     if app.show_details {
-                        let panel = side_panel_rect(f, app);
+                        let panel = side_panel_rect(f);
                         render_details_panel(f, app, panel);
                     }
                 }
@@ -121,11 +116,69 @@ fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
         .borders(Borders::ALL);
     f.render_widget(clear, panel);
     f.render_widget(parent_block, panel);
-    let vertical_scroll = 0;
     let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
         .end_symbol(Some("↓"));
-    let mut scrollbar_state = ScrollbarState::new(20).position(vertical_scroll);
+
+    let panel_layout = centered_rect(95, 95, panel);
+
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(30),
+            Constraint::Percentage(70),
+        ])
+        .split(panel_layout);
+    let header = layout[0];
+    let content = layout[1];
+
+    let header_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(35),
+            Constraint::Percentage(65),
+        ])
+        .split(header);
+    //TODO: figure out how to render only a box of the content.
+    let content_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Min(10),
+            Constraint::Min(10),
+            Constraint::Min(10),
+            Constraint::Min(10),
+            Constraint::Min(10),
+        ])
+        .split(content);
+
+    let pn_b = Block::default().title("Part Number:").borders(Borders::TOP | Borders::BOTTOM);
+    let pn_t = Paragraph::new(app.part_text.part_number.clone()).block(pn_b);
+    f.render_widget(pn_t, header_chunks[0]);
+    let desc_b = Block::default().title("Description:").borders(Borders::TOP | Borders::BOTTOM);
+    let desc_t = Paragraph::new(app.part_text.description.clone()).block(desc_b).wrap(Wrap { trim: true });
+    f.render_widget(desc_t, header_chunks[1]);
+    let mfg_b = Block::default().title("Manufacturer:").borders(Borders::TOP | Borders::BOTTOM);
+    let mfg_t = Paragraph::new(app.part_text.manufacturer.clone()).block(mfg_b);
+
+    let pkg_b = Block::default().title("Package:").borders(Borders::TOP | Borders::BOTTOM);
+    let pkg_t = Paragraph::new(app.part_text.package.clone()).block(pkg_b);
+
+    let val_b = Block::default().title("Value:").borders(Borders::TOP | Borders::BOTTOM);
+    let val_t = Paragraph::new(app.part_text.value.clone()).block(val_b);
+
+    let tol_b = Block::default().title("Tolerance:").borders(Borders::TOP | Borders::BOTTOM);
+    let tol_t = Paragraph::new(app.part_text.tolerance.clone()).block(tol_b);
+
+    let width = content_chunks[0].width;
+    let height = mfg_t.line_count(width) + pkg_t.line_count(width) + val_t.line_count(width) + tol_t.line_count(width);
+
+
+    f.render_widget(mfg_t, content_chunks[0]);
+    f.render_widget(pkg_t, content_chunks[1]);
+    f.render_widget(val_t, content_chunks[2]);
+    f.render_widget(tol_t, content_chunks[3]);
+
+    let mut scrollbar_state = ScrollbarState::new(height).position(app.part_scroll_info.scroll_position);
 
     f.render_stateful_widget(
         scrollbar,
@@ -136,26 +189,6 @@ fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
         }),
         &mut scrollbar_state,
     );
-
-    let content_layout = centered_rect(95, 95, panel);
-
-    let layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(10),
-            Constraint::Fill(1),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-            Constraint::Percentage(20),
-        ])
-        .split(content_layout);
-
-    let pn_b = Block::default().title("Part Number:").borders(Borders::TOP | Borders::BOTTOM);
-    let pn_t = Paragraph::new(app.part_text.part_number.clone()).block(pn_b);
-    f.render_widget(pn_t, layout[0]);
-    let desc_b = Block::default().title("Description:").borders(Borders::TOP | Borders::BOTTOM);
-    let desc_t = Paragraph::new(app.part_text.description.clone()).block(desc_b).wrap(Wrap { trim: true });
-    f.render_widget(desc_t, layout[1]);
 }
 
 
@@ -197,7 +230,7 @@ fn render_new_part_popup(f: &mut Frame, app: &App) {
     let mut val_b = Block::default().title("Value").borders(Borders::ALL);
     let mut tol_b = Block::default().title("Tolerance").borders(Borders::ALL);
 
-    if(app.parts_sub_state == app::PartsSubState::EditPart) {
+    if app.parts_sub_state == app::PartsSubState::EditPart {
         pn_b = pn_b.borders(disabled_style);
     }
 
@@ -240,7 +273,7 @@ fn render_new_part_popup(f: &mut Frame, app: &App) {
     f.render_widget(foot, popup_chunks[6]);
 }
 
-fn side_panel_rect(f: &mut Frame, app: &App) -> Rect {
+fn side_panel_rect(f: &mut Frame) -> Rect {
     let layouts = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -252,11 +285,12 @@ fn side_panel_rect(f: &mut Frame, app: &App) -> Rect {
 }
 
 fn create_table_rows(app: &App) -> Vec<Row<'static>> {
-    let parts = &app.part_data;
+    let part_data = &app.part_data;
     let mut rows: Vec<Row> = Vec::new();
-    for part in parts {
+    for part in part_data {
         let row = Row::new(vec![
             part.part_number.clone(),
+            part.total_qty.to_string(),
             part.manufacturer.clone().unwrap_or("".to_string()),
             part.package.clone().unwrap_or("".to_string()),
             part.label.clone().unwrap_or("".to_string()),
