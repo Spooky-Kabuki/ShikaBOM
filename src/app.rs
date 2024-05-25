@@ -40,6 +40,7 @@ pub struct App {
     pub part_text: PartText,
     pub part_table_state: TableState,
     pub part_data: Vec<Part>,
+    pub show_details: bool,
     pub exit: bool,
 }
 pub struct PartText {
@@ -49,6 +50,7 @@ pub struct PartText {
     pub label: String,
     pub value: String,
     pub tolerance: String,
+    pub description: String,
 }
 
 impl PartText {
@@ -59,6 +61,7 @@ impl PartText {
         self.label.clear();
         self.value.clear();
         self.tolerance.clear();
+        self.description.clear();
     }
 
     fn copy_from_db_part(&mut self, part: &Part) {
@@ -68,6 +71,7 @@ impl PartText {
         self.label = part.label.clone().unwrap_or("".to_string());
         self.value = part.value.clone().unwrap_or("".to_string());
         self.tolerance = part.tolerance.clone().unwrap_or("".to_string());
+        self.description = part.description.clone().unwrap_or("".to_string());
     }
 
     fn copy_to_db_part(&self, part: &mut Part) {
@@ -77,6 +81,7 @@ impl PartText {
         part.label = Some(self.label.clone());
         part.value = Some(self.value.clone());
         part.tolerance = Some(self.tolerance.clone());
+        part.description = Some(self.description.clone());
     }
 }
 
@@ -87,6 +92,17 @@ pub enum CurrentlyEditingPart {
     Label,
     Value,
     Tolerance,
+}
+
+impl PartialEq for PartsSubState {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (PartsSubState::Main, PartsSubState::Main) => true,
+            (PartsSubState::NewPart, PartsSubState::NewPart) => true,
+            (PartsSubState::EditPart, PartsSubState::EditPart) => true,
+            _ => false,
+        }
+    }
 }
 impl App {
     pub fn new() -> App {
@@ -101,10 +117,12 @@ impl App {
                 label: "".to_string(),
                 value: "".to_string(),
                 tolerance: "".to_string(),
+                description: "".to_string()
             },
             part_table_state: TableState::default(),
             part_data: Vec::new(),
-            exit: false
+            exit: false,
+            show_details: false,
         }
     }
 
@@ -161,12 +179,26 @@ impl App {
                                     self.part_text.copy_from_db_part(&fetched_part);
 
                                     self.parts_sub_state = PartsSubState::EditPart;
-                                    self.currently_editing_part = CurrentlyEditingPart::PartNumber;
+                                    //Can't edit part number
+                                    self.currently_editing_part = CurrentlyEditingPart::Manufacturer;
                                 }
                                 None => {}
                             }
-
-
+                        }
+                        KeyCode::Char('d') => {
+                            match self.part_table_state.selected() {
+                                Some(selected) => {
+                                    self.part_text.clear();
+                                    //Fill in part info for side panel
+                                    //TODO: Make part text a big boi
+                                    let selected_pn = self.part_data[selected].part_number.clone();
+                                    let fetched_part = parts::retrieve_part(&selected_pn);
+                                    self.part_text.copy_from_db_part(&fetched_part);
+                                    //Only show if we have data to display
+                                    self.show_details();
+                                }
+                                None => {}
+                            }
                         }
                         KeyCode::Down => {
                             match self.part_table_state.selected() {
@@ -179,6 +211,7 @@ impl App {
                                     self.part_table_state.select(Some(0));
                                 }
                             }
+                            self.update_selected_part();
                         }
                         KeyCode::Up => {
                             match self.part_table_state.selected() {
@@ -191,6 +224,7 @@ impl App {
                                     self.part_table_state.select(Some(0));
                                 }
                             }
+                            self.update_selected_part();
                         }
                         _ => {}
                     }
@@ -244,7 +278,7 @@ impl App {
                                 self.currently_editing_part = CurrentlyEditingPart::Tolerance;
                             },
                             CurrentlyEditingPart::Tolerance => {
-                                self.currently_editing_part = CurrentlyEditingPart::PartNumber;
+                                self.currently_editing_part = CurrentlyEditingPart::Manufacturer;
                             },
                         }
                     },
@@ -288,9 +322,6 @@ impl App {
                     }
                     KeyCode::Char(value) => {
                         match self.currently_editing_part {
-                            CurrentlyEditingPart::PartNumber => {
-                                self.part_text.part_number.push(value);
-                            },
                             CurrentlyEditingPart::Manufacturer => {
                                 self.part_text.manufacturer.push(value);
                             },
@@ -306,10 +337,12 @@ impl App {
                             CurrentlyEditingPart::Tolerance => {
                                 self.part_text.tolerance.push(value);
                             },
+                            _ => {}
                         }
                     },
                     KeyCode::Tab => {
                         match self.currently_editing_part {
+                            //Shouldn't be in the PN state, but just in case
                             CurrentlyEditingPart::PartNumber => {
                                 self.currently_editing_part = CurrentlyEditingPart::Manufacturer;
                             },
@@ -326,15 +359,12 @@ impl App {
                                 self.currently_editing_part = CurrentlyEditingPart::Tolerance;
                             },
                             CurrentlyEditingPart::Tolerance => {
-                                self.currently_editing_part = CurrentlyEditingPart::PartNumber;
+                                self.currently_editing_part = CurrentlyEditingPart::Manufacturer;
                             },
                         }
                     },
                     KeyCode::Backspace => {
                         match self.currently_editing_part {
-                            CurrentlyEditingPart::PartNumber => {
-                                self.part_text.part_number.pop();
-                            },
                             CurrentlyEditingPart::Manufacturer => {
                                 self.part_text.manufacturer.pop();
                             },
@@ -350,6 +380,7 @@ impl App {
                             CurrentlyEditingPart::Tolerance => {
                                 self.part_text.tolerance.pop();
                             },
+                            _ => {}
                         }
                     },
                     KeyCode::Enter => {
@@ -392,5 +423,20 @@ impl App {
 
     fn refresh_part_data(&mut self) {
         self.part_data = parts::fetch_part_data();
+    }
+
+    fn show_details(&mut self) {
+        self.show_details = !self.show_details;
+    }
+
+    fn update_selected_part(&mut self) {
+        match self.part_table_state.selected() {
+            Some(selected) => {
+                let selected_pn = self.part_data[selected].part_number.clone();
+                let fetched_part = parts::retrieve_part(&selected_pn);
+                self.part_text.copy_from_db_part(&fetched_part);
+            }
+            None => {}
+        }
     }
 }

@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 // ANCHOR: all
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
@@ -6,6 +7,7 @@ use ratatui::{
     widgets::*,
     Frame,
 };
+use ratatui::layout::Margin;
 
 use ratatui::style::{Modifier, Stylize};
 
@@ -35,11 +37,7 @@ pub fn ui(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Green));
     f.render_widget(a, chunks[0]);
-    // let b = Block::default()
-    //     .borders(Borders::ALL);
-    // f.render_widget(b, chunks[1]);
-    //let rows = [Row::new(vec!["Cell1", "Cell2", "Cell3"])];
-    //TODO: We don't want this running so often.
+
     let rows = create_table_rows(&app);
 // Columns widths are constrained in the same way as Layout...
     let widths = [
@@ -83,7 +81,7 @@ pub fn ui(f: &mut Frame, app: &App) {
     let current_keys_hint = {
         match app.current_screen {
             CurrentScreen::PartScreen => Span::styled(
-                "(q) to quit / (n) to make new part / (r) to refresh data / (e) to edit part",
+                "(q) to quit / (n) to make new part / (r) to refresh data / (e) to edit part / (d)etailed view",
                 Style::default().fg(Color::Red),
             ),
         }
@@ -95,6 +93,12 @@ pub fn ui(f: &mut Frame, app: &App) {
     match app.current_screen {
         CurrentScreen::PartScreen => {
             match app.parts_sub_state {
+                app::PartsSubState::Main => {
+                    if app.show_details {
+                        let panel = side_panel_rect(f, app);
+                        render_details_panel(f, app, panel);
+                    }
+                }
                 app::PartsSubState::NewPart => {
                     render_new_part_popup(f, app);
                 }
@@ -110,9 +114,56 @@ pub fn ui(f: &mut Frame, app: &App) {
 
 }
 
+fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
+    let clear = Clear::default();
+    let parent_block = Block::default()
+        .title("Details")
+        .borders(Borders::ALL);
+    f.render_widget(clear, panel);
+    f.render_widget(parent_block, panel);
+    let vertical_scroll = 0;
+    let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+        .begin_symbol(Some("↑"))
+        .end_symbol(Some("↓"));
+    let mut scrollbar_state = ScrollbarState::new(20).position(vertical_scroll);
+
+    f.render_stateful_widget(
+        scrollbar,
+        panel.inner(&Margin {
+            // using an inner vertical margin of 1 unit makes the scrollbar inside the block
+            vertical: 1,
+            horizontal: 0,
+        }),
+        &mut scrollbar_state,
+    );
+
+    let content_layout = centered_rect(95, 95, panel);
+
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(10),
+            Constraint::Fill(1),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+            Constraint::Percentage(20),
+        ])
+        .split(content_layout);
+
+    let pn_b = Block::default().title("Part Number:").borders(Borders::TOP | Borders::BOTTOM);
+    let pn_t = Paragraph::new(app.part_text.part_number.clone()).block(pn_b);
+    f.render_widget(pn_t, layout[0]);
+    let desc_b = Block::default().title("Description:").borders(Borders::TOP | Borders::BOTTOM);
+    let desc_t = Paragraph::new(app.part_text.description.clone()).block(desc_b).wrap(Wrap { trim: true });
+    f.render_widget(desc_t, layout[1]);
+}
+
+
 
 fn render_new_part_popup(f: &mut Frame, app: &App) {
     let highlighted_style = Style::default().fg(Color::White).bg(Color::Blue);
+
+    let disabled_style = Borders::NONE;
 
     let popup_block = Block::default()
         .title("Enter new part information:")
@@ -145,6 +196,10 @@ fn render_new_part_popup(f: &mut Frame, app: &App) {
     let mut lbl_b = Block::default().title("Label").borders(Borders::ALL);
     let mut val_b = Block::default().title("Value").borders(Borders::ALL);
     let mut tol_b = Block::default().title("Tolerance").borders(Borders::ALL);
+
+    if(app.parts_sub_state == app::PartsSubState::EditPart) {
+        pn_b = pn_b.borders(disabled_style);
+    }
 
     match app.currently_editing_part {
         crate::app::CurrentlyEditingPart::PartNumber => {
@@ -183,6 +238,17 @@ fn render_new_part_popup(f: &mut Frame, app: &App) {
     let foot = Paragraph::new(Line::from(footer_text))
         .block(Block::default().borders(Borders::NONE));
     f.render_widget(foot, popup_chunks[6]);
+}
+
+fn side_panel_rect(f: &mut Frame, app: &App) -> Rect {
+    let layouts = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(70),
+            Constraint::Percentage(30),
+        ])
+        .split(f.size());
+    return layouts[1]
 }
 
 fn create_table_rows(app: &App) -> Vec<Row<'static>> {
