@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Part {
     pub part_number: String,
-    pub total_qty: i32,
+    pub total_qty: Option<i64>,
     pub manufacturer: Option<String>,
     pub description: Option<String>,
     pub label: Option<String>,
@@ -16,20 +16,21 @@ pub struct Part {
 pub struct PartStorage {
     pub part_number: String,
     pub location: String,
-    pub quantity: i32
+    pub quantity: i64
 }
 
 fn new_part_from_sql(row: postgres::Row) -> Part {
-    Part {
+    let new_part = Part {
         part_number: row.try_get("partnumber").unwrap_or("".to_string()), //this cannot be null
-        total_qty: row.try_get("quantity").unwrap_or(0),
+        total_qty: Some(row.try_get("total_qty").unwrap_or(0)),
         manufacturer: Some(row.try_get("manufacturer").unwrap_or("".to_string())),
         description: Some(row.try_get("description").unwrap_or("".to_string())),
         label: Some(row.try_get("label").unwrap_or("".to_string())),
         package: Some(row.try_get("package").unwrap_or("".to_string())),
         value: Some(row.try_get("value").unwrap_or("".to_string())),
         tolerance: Some(row.try_get("tolerance").unwrap_or("".to_string()))
-    }
+    };
+    return new_part;
 }
 
 pub fn fetch_all_parts() -> Vec<Part> {
@@ -116,4 +117,6 @@ fn test_fetch_all_parts() {
 fn test_fetch_single_part() {
     let part = fetch_single_part("HFW1V2210H4R7K");
     assert_eq!(part.part_number, "HFW1V2210H4R7K");
+    assert!(part.total_qty.unwrap() > 0);
+
 }

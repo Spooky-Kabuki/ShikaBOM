@@ -75,7 +75,7 @@ impl PartText {
 
     fn copy_from_db_part(&mut self, part: &Part) {
         self.part_number = part.part_number.clone();
-        self.total_qty = part.total_qty.to_string();
+        self.total_qty = part.total_qty.unwrap_or(0).to_string();
         self.manufacturer = part.manufacturer.clone().unwrap_or("".to_string());
         self.package = part.package.clone().unwrap_or("".to_string());
         self.label = part.label.clone().unwrap_or("".to_string());
@@ -86,7 +86,7 @@ impl PartText {
 
     fn copy_to_db_part(&self, part: &mut Part) {
         part.part_number = self.part_number.clone();
-        part.total_qty = self.total_qty.parse().unwrap(); //TODO: evaluate keeping this a number?
+        part.total_qty = Some(self.total_qty.parse().unwrap()); //TODO: evaluate keeping this a number?
         part.manufacturer = Some(self.manufacturer.clone());
         part.package = Some(self.package.clone());
         part.label = Some(self.label.clone());
@@ -340,7 +340,7 @@ impl App {
                         //TODO: fix!!!!
                         let mut new_part: Part = Part {
                             part_number: "".to_string(),
-                            total_qty: 0,
+                            total_qty: None,
                             manufacturer: None,
                             description: None,
                             label: None,
@@ -431,7 +431,7 @@ impl App {
                         //update the part in SQL
                         let mut part = Part {
                             part_number: "".to_string(),
-                            total_qty: 0,
+                            total_qty: None,
                             manufacturer: None,
                             description: None,
                             label: None,

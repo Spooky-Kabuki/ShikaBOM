@@ -290,7 +290,7 @@ fn create_table_rows(app: &App) -> Vec<Row<'static>> {
     for part in part_data {
         let row = Row::new(vec![
             part.part_number.clone(),
-            part.total_qty.to_string(),
+            part.total_qty.unwrap_or(0).to_string(),
             part.manufacturer.clone().unwrap_or("".to_string()),
             part.package.clone().unwrap_or("".to_string()),
             part.label.clone().unwrap_or("".to_string()),
