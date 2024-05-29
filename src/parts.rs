@@ -13,6 +13,21 @@ pub struct Part {
     pub tolerance: Option<String>,
 }
 
+impl Part {
+    pub fn new() -> Part {
+        Part {
+            part_number: "".to_string(),
+            total_qty: None,
+            manufacturer: None,
+            description: None,
+            label: None,
+            package: None,
+            value: None,
+            tolerance: None,
+        }
+    }
+}
+
 pub struct PartStorage {
     pub part_number: String,
     pub location: String,

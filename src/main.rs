@@ -4,6 +4,8 @@ mod app;
 mod ui;
 mod parts;
 mod db;
+mod parts_view;
+mod parts_ui;
 
 use app::App;
 
