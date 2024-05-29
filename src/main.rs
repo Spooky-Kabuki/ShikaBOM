@@ -6,6 +6,7 @@ mod parts;
 mod db;
 mod parts_view;
 mod parts_ui;
+mod stock;
 
 use app::App;
 
