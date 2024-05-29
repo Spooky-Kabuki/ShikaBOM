@@ -16,7 +16,7 @@ pub struct Part {
 pub struct PartStorage {
     pub part_number: String,
     pub location: String,
-    pub quantity: i64
+    pub quantity: i32
 }
 
 fn new_part_from_sql(row: postgres::Row) -> Part {
@@ -93,7 +93,7 @@ pub fn modify_part(inpart: &Part) {
 
 pub fn fetch_part_storage_data(pn: &str) -> Vec<PartStorage> {
     let mut client = postgres_init();
-    let rows = client.query("select * from part_storage where partnumber = $1", &[&pn]).unwrap();
+    let rows = client.query("select * from part_storage_view where partnumber = $1", &[&pn]).unwrap();
     let mut part_stores: Vec<PartStorage> = Vec::new();
     for row in rows {
         let part = PartStorage {
@@ -104,7 +104,6 @@ pub fn fetch_part_storage_data(pn: &str) -> Vec<PartStorage> {
         part_stores.push(part);
     };
     return part_stores;
-
 }
 
 #[test]
@@ -119,4 +118,13 @@ fn test_fetch_single_part() {
     assert_eq!(part.part_number, "HFW1V2210H4R7K");
     assert!(part.total_qty.unwrap() > 0);
 
+}
+
+#[test]
+fn test_fetch_part_storage_data() {
+    let mut part_stores = fetch_part_storage_data("25SVPF47M");
+    assert!(part_stores.is_empty());
+    part_stores = fetch_part_storage_data("HFW1V2210H4R7K");
+    assert!(!part_stores.is_empty());
+    assert!(part_stores[0].quantity > 0);
 }
