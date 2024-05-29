@@ -48,7 +48,8 @@ pub struct App {
     pub part_data: Vec<Part>,
     pub show_details: bool,
     pub exit: bool,
-    pub part_scroll_info: PartScrollInfo
+    pub part_scroll_info: PartScrollInfo,
+    pub part_storage_data: Vec<parts::PartStorage>
 }
 pub struct PartText {
     pub part_number: String,
@@ -138,7 +139,8 @@ impl App {
             part_scroll_info: PartScrollInfo {
                 scroll_position: 0,
                 scroll_length: 0
-            }
+            },
+            part_storage_data: Vec::new()
         }
     }
 
@@ -210,6 +212,7 @@ impl App {
                                     let selected_pn = self.part_data[selected].part_number.clone();
                                     let fetched_part = parts::fetch_single_part(&selected_pn);
                                     self.part_text.copy_from_db_part(&fetched_part);
+                                    self.part_storage_data = parts::fetch_part_storage_data(&selected_pn);
                                     self.part_scroll_info.reset();
                                     //Only show if we have data to display
                                     self.show_details();

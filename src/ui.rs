@@ -125,38 +125,47 @@ fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
     let layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(30),
-            Constraint::Percentage(70),
+            Constraint::Percentage(50),
+            Constraint::Percentage(50),
         ])
         .split(panel_layout);
     let header = layout[0];
     let content = layout[1];
-
+    let table_size = app.part_storage_data.len() + 2 + 2;
     let header_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(35),
-            Constraint::Percentage(65),
+            Constraint::Min(4),
+            Constraint::Fill(1),
+            Constraint::Min(table_size as u16)
         ])
         .split(header);
     //TODO: figure out how to render only a box of the content.
+
     let content_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(10),
-            Constraint::Min(10),
-            Constraint::Min(10),
-            Constraint::Min(10),
-            Constraint::Min(10),
+            Constraint::Min(3),
+            Constraint::Min(3),
+            Constraint::Min(3),
+            Constraint::Min(3),
+            Constraint::Min(3)
         ])
         .split(content);
-
+    //These are fixed bits of info
     let pn_b = Block::default().title("Part Number:").borders(Borders::TOP | Borders::BOTTOM);
     let pn_t = Paragraph::new(app.part_text.part_number.clone()).block(pn_b);
     f.render_widget(pn_t, header_chunks[0]);
     let desc_b = Block::default().title("Description:").borders(Borders::TOP | Borders::BOTTOM);
     let desc_t = Paragraph::new(app.part_text.description.clone()).block(desc_b).wrap(Wrap { trim: true });
     f.render_widget(desc_t, header_chunks[1]);
+    let storage_b = Block::default().title("Storage").borders(Borders::TOP | Borders::BOTTOM);
+    f.render_widget(create_part_storage_table(app, storage_b), header_chunks[2]);
+
+    //Dynamically render these
+    let total_qty_b = Block::default().title("Total Quantity:").borders(Borders::TOP | Borders::BOTTOM);
+    let total_qty_t = Paragraph::new(app.part_text.total_qty.clone()).block(total_qty_b);
+
     let mfg_b = Block::default().title("Manufacturer:").borders(Borders::TOP | Borders::BOTTOM);
     let mfg_t = Paragraph::new(app.part_text.manufacturer.clone()).block(mfg_b);
 
@@ -167,18 +176,23 @@ fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
     let val_t = Paragraph::new(app.part_text.value.clone()).block(val_b);
 
     let tol_b = Block::default().title("Tolerance:").borders(Borders::TOP | Borders::BOTTOM);
-    let tol_t = Paragraph::new(app.part_text.tolerance.clone()).block(tol_b);
+    let tol_t = Paragraph::new(content_chunks.len().to_string()).block(tol_b);
+
 
     let width = content_chunks[0].width;
-    let height = mfg_t.line_count(width) + pkg_t.line_count(width) + val_t.line_count(width) + tol_t.line_count(width);
-
-
-    f.render_widget(mfg_t, content_chunks[0]);
-    f.render_widget(pkg_t, content_chunks[1]);
-    f.render_widget(val_t, content_chunks[2]);
-    f.render_widget(tol_t, content_chunks[3]);
-
-    let mut scrollbar_state = ScrollbarState::new(height).position(app.part_scroll_info.scroll_position);
+    let mut real_height = 0;
+    //TODO: Use this to calculate the starting index for the panel components
+    //let starting_idx = 0;
+    let panel_component_vec: Vec<Paragraph> = vec![total_qty_t, mfg_t, pkg_t, val_t, tol_t];
+    for item in &panel_component_vec {
+        real_height += item.line_count(width);
+    }
+    for i in 0..content_chunks.len() {
+        if i < panel_component_vec.len() {
+            f.render_widget(panel_component_vec[i].clone(), content_chunks[i]);
+        }
+    }
+    let mut scrollbar_state = ScrollbarState::new(real_height).position(app.part_scroll_info.scroll_position);
 
     f.render_stateful_widget(
         scrollbar,
@@ -282,6 +296,43 @@ fn side_panel_rect(f: &mut Frame) -> Rect {
         ])
         .split(f.size());
     return layouts[1]
+}
+
+fn create_part_storage_table<'a>(app: &App, block: Block<'a>) -> Table<'a> {
+    //Storage table
+    let rows = create_storage_table_rows(&app);
+// Columns widths are constrained in the same way as Layout...
+    let widths = [
+        Constraint::Percentage(50),
+        Constraint::Percentage(50)
+    ];
+    let header_style = Style::default()
+        .fg(tailwind::SLATE.c200)
+        .bg(tailwind::BLUE.c900);
+    let storage_ta = Table::new(rows, widths)
+        .column_spacing(1)
+        .style(header_style)
+        .header(
+            Row::new(vec!["Location", "Qty"])
+                .style(header_style)
+                // To add space between the header and the rest of the rows, specify the margin
+                .bottom_margin(1),
+        )
+        .block(block);
+    return storage_ta;
+}
+
+fn create_storage_table_rows(app: &App) -> Vec<Row<'static>> {
+    let part_data = &app.part_storage_data;
+    let mut rows: Vec<Row> = Vec::new();
+    for part in part_data {
+        let row = Row::new(vec![
+            part.location.clone(),
+            part.quantity.to_string(),
+        ]);
+        rows.push(row);
+    }
+    return rows;
 }
 
 fn create_table_rows(app: &App) -> Vec<Row<'static>> {
