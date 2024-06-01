@@ -10,17 +10,19 @@ use crossterm::{
     }
 };
 use crate::parts_view::*;
+use crate::stock_view::*;
 use crate::ui::ui;
 
 pub enum CurrentScreen {
     PartScreen,
     ProjectScreen,
-    StorageScreen
+    StockScreen
 }
 
 pub struct App {
     pub current_screen: CurrentScreen,
     pub parts_view: PartsView,
+    pub stock_view: StockView,
     pub exit: bool,
 }
 impl App {
@@ -28,6 +30,7 @@ impl App {
         App {
             current_screen: CurrentScreen::PartScreen,
             parts_view: PartsView::new(),
+            stock_view: StockView::new(),
             exit: false,
         }
     }
@@ -58,6 +61,9 @@ impl App {
             CurrentScreen::PartScreen => {
                 self.handle_parts_keys(key_event);
             },
+            CurrentScreen::StockScreen => {
+                self.handle_storage_keys(key_event);
+            }
             _ => {}
         }
         Ok(())
@@ -80,13 +86,32 @@ impl App {
 
     }
 
+    fn handle_storage_keys(&mut self, key_event: KeyEvent) {
+        match self.stock_view.stock_sub_state {
+            StockSubState::StockMain => {
+                if !self.handle_global_keys(key_event) {
+                    self.stock_view.handle_main_keys(key_event.code);
+                }
+            }
+        }
+    }
+
     // handles global key events when we don't want to override (e.g. quit)
     pub fn handle_global_keys(&mut self, key_event: KeyEvent) -> bool {
         match key_event.code {
             KeyCode::Char('q') => {
                 self.exit();
                 true
-            }
+            },
+            KeyCode::Char('S') => {
+                self.stock_view.fetch_stock_data();
+                self.current_screen = CurrentScreen::StockScreen;
+                true
+            },
+            KeyCode::Char('A') => {
+                self.current_screen = CurrentScreen::PartScreen;
+                true
+            },
             _ => {false}
         }
     }

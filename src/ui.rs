@@ -5,7 +5,7 @@ use ratatui::{
     widgets::*,
     Frame,
 };
-use crate::{parts_ui, parts_view};
+use crate::{parts_ui, parts_view, stock_view, stock_ui};
 use crate::app::{App, CurrentScreen};
 
 pub fn ui(f: &mut Frame, app: &App) {
@@ -27,7 +27,7 @@ pub fn ui(f: &mut Frame, app: &App) {
         .title("ShikaBOM")
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Green));
-    let menu_bar_text = Span::styled("[P]rojects, P[a]rts, [S]torage", Style::default().fg(Color::White));
+    let menu_bar_text = Span::styled("[P]rojects, P[A]rts, [S]torage", Style::default().fg(Color::White));
     let menu_bar_t = Paragraph::new(menu_bar_text)
         .block(menu_bar_b);
     f.render_widget(menu_bar_t, header_chunk);
@@ -69,6 +69,14 @@ pub fn ui(f: &mut Frame, app: &App) {
                 }
             }
         },
+        CurrentScreen::StockScreen => {
+            match app.stock_view.stock_sub_state {
+                stock_view::StockSubState::StockMain => {
+                    stock_ui::render_main_stock_panel(f, app, content_chunk);
+                },
+                //_ => {}
+            }
+        }
         _ => {}
     }
 }

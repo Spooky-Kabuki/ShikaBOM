@@ -1,13 +1,14 @@
+use crate::db;
 pub struct StockInfo {
     //Nothing in this struct can be null, so no optional types needed.
-    partnumber: String,
-    low_stock_threshold: i32,
-    on_hand: i32,
-    on_order: i32,
-    in_prod: i32,
-    total_stock: i32,
-    balance: i32,
-    available: i32
+    pub partnumber: String,
+    pub low_stock_threshold: i32,
+    pub on_hand: i32,
+    pub on_order: i32,
+    pub in_prod: i32,
+    pub total_stock: i32,
+    pub balance: i32,
+    pub available: i32
 }
 
 impl StockInfo {
@@ -23,4 +24,25 @@ impl StockInfo {
             available: 0
         }
     }
+}
+
+pub fn fetch_stock_info() -> Vec<StockInfo> {
+    let mut stock_data = Vec::new();
+
+    let query = "SELECT * FROM stock";
+    let mut client = db::postgres_init();
+    let rows = client.query(query, &[]).unwrap();
+    for row in rows {
+        let mut stock = StockInfo::new();
+        stock.partnumber = row.try_get("partnumber").unwrap_or("".to_string());
+        stock.low_stock_threshold = row.try_get("low_stock_threshold").unwrap_or(0);
+        stock.on_hand = row.try_get("on_hand").unwrap_or(0);
+        stock.on_order = row.try_get("on_order").unwrap_or(0);
+        stock.in_prod = row.try_get("in_prod").unwrap_or(0);
+        stock.total_stock = row.try_get("c_stock").unwrap_or(0);
+        stock.balance = row.try_get("c_balance").unwrap_or(0);
+        stock.available = row.try_get("c_available").unwrap_or(0);
+        stock_data.push(stock);
+    }
+    return stock_data;
 }

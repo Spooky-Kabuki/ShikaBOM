@@ -55,6 +55,7 @@ pub fn render_main_parts_panel(f: &mut Frame, app: &App, rect: Rect) {
     f.render_stateful_widget(table, rect, &mut app.parts_view.part_table_state.clone());
 }
 
+//TODO: This panel is missing the label field
 pub fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
     let clear = Clear::default();
     let parent_block = Block::default()

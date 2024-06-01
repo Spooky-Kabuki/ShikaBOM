@@ -7,6 +7,8 @@ mod db;
 mod parts_view;
 mod parts_ui;
 mod stock;
+mod stock_ui;
+mod stock_view;
 
 use app::App;
 
