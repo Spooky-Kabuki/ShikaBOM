@@ -67,7 +67,7 @@ impl PartText {
 
     pub(crate) fn copy_to_db_part(&self, part: &mut Part) {
         part.part_number = self.part_number.clone();
-        part.total_qty = Some(self.total_qty.parse().unwrap()); //TODO: evaluate keeping this a number?
+        part.total_qty = Some(self.total_qty.parse().unwrap_or(0)); //TODO: evaluate keeping this a number?
         part.manufacturer = Some(self.manufacturer.clone());
         part.package = Some(self.package.clone());
         part.label = Some(self.label.clone());
