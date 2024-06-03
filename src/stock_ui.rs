@@ -5,7 +5,8 @@ use ratatui::{
     style::palette::tailwind,
     widgets::{
         Block, Borders, Clear, Paragraph, Row, Scrollbar,
-        ScrollbarOrientation, ScrollbarState, Table, Wrap
+        ScrollbarOrientation, ScrollbarState, Table, Wrap,
+        List, ListDirection
     }
 };
 use crate::app::App;
@@ -34,7 +35,7 @@ pub fn render_main_stock_panel(f: &mut Frame, app: &App, rect: Rect) {
         .fg(tailwind::EMERALD.c400);
     let table = Table::new(rows, widths)
         .column_spacing(1)
-        .style(Style::new().green())
+        .style(Style::new().bg(Color::Black).fg(tailwind::EMERALD.c400))
         .header(
             //TODO: Bring this in from parts.rs
             Row::new(vec!["Part Number", "Total Stock", "On Hand", "Available", "In Production", "Balance", "Low Stock Threshold", "On Order"])
@@ -69,4 +70,45 @@ pub fn create_stock_table_rows(app: &App) -> Vec<Row> {
     }
     rows
 
+}
+pub fn render_create_stock_popup(f: &mut Frame, app: &App) {
+    let highlighted_style = Style::default()
+        .fg(tailwind::SLATE.c200)
+        .bg(tailwind::EMERALD.c900);
+    let selected_style = Style::default()
+        //.add_modifier(Modifier::REVERSED)
+        .fg(tailwind::EMERALD.c400)
+        .bg(tailwind::SLATE.c200);
+
+    let popup_block = Block::default()
+        .title("Create stock for an existing part:")
+        .borders(Borders::ALL)
+        .style(Style::default().bg(Color::Black).fg(tailwind::EMERALD.c400));
+
+    let area = centered_rect(60, 35, f.size());
+    let clear = Clear::default();
+    f.render_widget(clear, area);
+    f.render_widget(popup_block, area);
+
+    let hori_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50)
+        ])
+        .split(area);
+    let list_chunk = hori_chunks[0];
+    let form_chunk = hori_chunks[1];
+
+    let items = app.stock_view.nonstocked_pns.clone();
+    let list = List::new(items)
+        .block(Block::bordered().title("Part Number").borders(Borders::ALL))
+        .style(Style::default().fg(Color::White))
+        .highlight_style(highlighted_style.add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>")
+        .repeat_highlight_symbol(true)
+        .direction(ListDirection::TopToBottom);
+
+    f.render_stateful_widget(list, list_chunk, & mut app.stock_view.nonstocked_pn_list_state.clone());
 }

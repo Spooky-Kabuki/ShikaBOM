@@ -46,3 +46,15 @@ pub fn fetch_stock_info() -> Vec<StockInfo> {
     }
     return stock_data;
 }
+
+pub fn fetch_nonstocked_partnumbers() -> Vec<String> {
+    let mut partnumbers = Vec::new();
+    let query = "select * from non_stocked_parts_view";
+    let mut client = db::postgres_init();
+    let rows = client.query(query, &[]).unwrap_or(Vec::new());
+    for row in rows {
+        let partnumber: String = row.try_get("partnumber").unwrap_or("".to_string());
+        partnumbers.push(partnumber);
+    }
+    partnumbers
+}

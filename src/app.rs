@@ -92,6 +92,18 @@ impl App {
                 if !self.handle_global_keys(key_event) {
                     self.stock_view.handle_main_keys(key_event.code);
                 }
+            },
+            StockSubState::CreateStock => {
+                self.stock_view.handle_create_stock_keys(key_event.code);
+            },
+            StockSubState::AddStock => {
+                self.stock_view.handle_add_stock_keys(key_event.code);
+            },
+            StockSubState::SpendStock => {
+                self.stock_view.handle_spend_stock_keys(key_event.code);
+            },
+            StockSubState::EditStock => {
+                self.stock_view.handle_edit_stock_keys(key_event.code);
             }
         }
     }

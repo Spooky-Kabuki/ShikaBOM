@@ -42,7 +42,7 @@ pub fn ui(f: &mut Frame, app: &App) {
                 Style::default().fg(Color::Red),
             ),
             _ => Span::styled(
-                "(q) to quit",
+                "(q) to quit / (c) to create stock / (a) to add stock / (s) to spend stock / (e) to edit stock",
                 Style::default().fg(Color::Red),
             ),
         }
@@ -70,11 +70,16 @@ pub fn ui(f: &mut Frame, app: &App) {
             }
         },
         CurrentScreen::StockScreen => {
+            stock_ui::render_main_stock_panel(f, app, content_chunk);
             match app.stock_view.stock_sub_state {
                 stock_view::StockSubState::StockMain => {
-                    stock_ui::render_main_stock_panel(f, app, content_chunk);
+                    //TODO: Render a detail panel???
                 },
-                //_ => {}
+                stock_view::StockSubState::CreateStock => {
+                    stock_ui::render_create_stock_popup(f, app);
+                }
+
+                _ => {}
             }
         }
         _ => {}
