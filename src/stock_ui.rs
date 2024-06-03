@@ -1,15 +1,16 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Margin, Rect},
-    prelude::{Color, Line, Modifier, Span, Style, Stylize},
+    layout::{Constraint, Rect},
+    prelude::{Color, Direction, Modifier, Layout, Style, Stylize},
     style::palette::tailwind,
     widgets::{
-        Block, Borders, Clear, Paragraph, Row, Scrollbar,
-        ScrollbarOrientation, ScrollbarState, Table, Wrap,
+        Block, Row, Paragraph, Clear,
+        Table, Borders,
         List, ListDirection
     }
 };
 use crate::app::App;
+use crate::stock_view::CreateStockPartField;
 //TODO: this should go into like a utils file or something
 use crate::ui::centered_rect;
 
@@ -101,14 +102,44 @@ pub fn render_create_stock_popup(f: &mut Frame, app: &App) {
     let list_chunk = hori_chunks[0];
     let form_chunk = hori_chunks[1];
 
+    let mut table_b = Block::default().title("Part Number").borders(Borders::ALL);
+    let mut lst_b = Block::default().title("Low Stock Threshold").borders(Borders::ALL);
+    let mut onhand_b = Block::default().title("On Hand").borders(Borders::ALL);
+
+    match app.stock_view.currently_editing_stock.active_field {
+        CreateStockPartField::PartNumber => {
+            table_b = table_b.style(highlighted_style);
+        }
+        CreateStockPartField::LowStockThreshold => {
+            lst_b = lst_b.style(highlighted_style);
+        }
+        CreateStockPartField::OnHand => {
+            onhand_b = onhand_b.style(highlighted_style);
+        }
+    }
+
     let items = app.stock_view.nonstocked_pns.clone();
     let list = List::new(items)
-        .block(Block::bordered().title("Part Number").borders(Borders::ALL))
-        .style(Style::default().fg(Color::White))
+        .block(table_b)
+        .style(Style::default())
         .highlight_style(highlighted_style.add_modifier(Modifier::ITALIC))
         .highlight_symbol(">>")
         .repeat_highlight_symbol(true)
         .direction(ListDirection::TopToBottom);
 
     f.render_stateful_widget(list, list_chunk, & mut app.stock_view.nonstocked_pn_list_state.clone());
+
+    let form_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50)
+            ])
+        .split(form_chunk);
+
+    let lts_t = Paragraph::new(app.stock_view.currently_editing_stock.low_stock_threshold.clone()).block(lst_b);
+    let onhand_t = Paragraph::new(app.stock_view.currently_editing_stock.on_hand.clone()).block(onhand_b);
+
+    f.render_widget(lts_t, form_chunks[0]);
+    f.render_widget(onhand_t, form_chunks[1]);
 }

@@ -58,3 +58,9 @@ pub fn fetch_nonstocked_partnumbers() -> Vec<String> {
     }
     partnumbers
 }
+
+pub fn create_new_stock(stock: StockInfo) {
+    let query = "INSERT INTO stock (partnumber, low_stock_threshold, on_hand, on_order) VALUES ($1, $2, $3, $4)";
+    let mut client = db::postgres_init();
+    client.execute(query, &[&stock.partnumber, &stock.low_stock_threshold, &stock.on_hand, &stock.on_order]).unwrap();
+}

@@ -1,8 +1,6 @@
 use std::cmp::PartialEq;
 use crossterm::event::KeyCode;
-use ratatui::Frame;
 use ratatui::widgets::{ListState, TableState};
-use crate::app::App;
 use crate::stock::*;
 
 
@@ -20,6 +18,37 @@ pub enum CreateStockPartField {
     OnHand,
     //TODO: include on_order and in_prod
 }
+
+pub struct CurrentlyEditingStock {
+    pub partnumber: String,
+    pub low_stock_threshold: String,
+    pub on_hand: String,
+    pub active_field: CreateStockPartField
+}
+
+impl CurrentlyEditingStock {
+    pub fn new() -> CurrentlyEditingStock {
+        CurrentlyEditingStock {
+            partnumber: "".to_string(),
+            low_stock_threshold: "".to_string(),
+            on_hand: "".to_string(),
+            active_field: CreateStockPartField::PartNumber
+        }
+    }
+
+    pub fn copy_to_stock_info(&self) -> StockInfo {
+        StockInfo {
+            partnumber: self.partnumber.clone(),
+            low_stock_threshold: self.low_stock_threshold.parse().unwrap_or(0),
+            on_hand: self.on_hand.parse().unwrap_or(0),
+            on_order: 0,
+            in_prod: 0,
+            total_stock: 0,
+            balance: 0,
+            available: 0
+        }
+    }
+}
 pub struct StockView {
     pub stock_sub_state: StockSubState,
     pub stock_data: Vec<StockInfo>,
@@ -27,7 +56,7 @@ pub struct StockView {
     pub stock_table_state: TableState,
     pub nonstocked_pns: Vec<String>,
     pub nonstocked_pn_list_state: ListState,
-    pub active_create_part_field: CreateStockPartField
+    pub currently_editing_stock: CurrentlyEditingStock
 }
 
 impl PartialEq for CreateStockPartField {
@@ -50,7 +79,7 @@ impl StockView {
             stock_table_state: TableState::default(),
             nonstocked_pns: Vec::new(),
             nonstocked_pn_list_state: ListState::default(),
-            active_create_part_field: CreateStockPartField::PartNumber
+            currently_editing_stock: CurrentlyEditingStock::new()
         }
     }
 
@@ -110,7 +139,7 @@ impl StockView {
                 self.stock_sub_state = StockSubState::StockMain;
             },
             KeyCode::Down => {
-                if self.active_create_part_field == CreateStockPartField::PartNumber {
+                if self.currently_editing_stock.active_field == CreateStockPartField::PartNumber {
                     match self.nonstocked_pn_list_state.selected() {
                         Some(selected) => {
                             if selected < self.nonstocked_pns.len() - 1 {
@@ -124,7 +153,7 @@ impl StockView {
                 }
             },
             KeyCode::Up => {
-                if self.active_create_part_field == CreateStockPartField::PartNumber {
+                if self.currently_editing_stock.active_field == CreateStockPartField::PartNumber {
                     match self.nonstocked_pn_list_state.selected() {
                         Some(selected) => {
                             if selected > 0 {
@@ -138,17 +167,58 @@ impl StockView {
                 }
             },
             KeyCode::Tab => {
-                match self.active_create_part_field {
+                match self.currently_editing_stock.active_field {
                     CreateStockPartField::PartNumber => {
-                        self.active_create_part_field = CreateStockPartField::LowStockThreshold;
+                        self.currently_editing_stock.active_field = CreateStockPartField::LowStockThreshold;
                     },
                     CreateStockPartField::LowStockThreshold => {
-                        self.active_create_part_field = CreateStockPartField::OnHand;
+                        self.currently_editing_stock.active_field = CreateStockPartField::OnHand;
                     },
                     CreateStockPartField::OnHand => {
-                        self.active_create_part_field = CreateStockPartField::PartNumber;
+                        self.currently_editing_stock.active_field = CreateStockPartField::PartNumber;
                     }
                 }
+            },
+            KeyCode::Char(value) => {
+                //Non-number values aren't allowed in this form
+                if !value.is_ascii_digit() {
+                    return;
+                }
+                match self.currently_editing_stock.active_field {
+                    CreateStockPartField::LowStockThreshold => {
+                        self.currently_editing_stock.low_stock_threshold.push(value);
+                    },
+                    CreateStockPartField::OnHand => {
+                        self.currently_editing_stock.on_hand.push(value);
+                    },
+                    _ => {}
+                }
+            }
+            KeyCode::Backspace => {
+                match self.currently_editing_stock.active_field {
+                    CreateStockPartField::LowStockThreshold => {
+                        self.currently_editing_stock.low_stock_threshold.pop();
+                    },
+                    CreateStockPartField::OnHand => {
+                        self.currently_editing_stock.on_hand.pop();
+                    },
+                    _ => {}
+                }
+            },
+            KeyCode::Enter => {
+                match self.nonstocked_pn_list_state.selected() {
+                    Some(selected) => {
+                        self.currently_editing_stock.partnumber =
+                            self.nonstocked_pns[selected].clone();
+                    },
+                    //Don't do DB operations if a PN isn't selected.
+                    None => { return; }
+                }
+                let new_stock = self.currently_editing_stock.copy_to_stock_info();
+                create_new_stock(new_stock);
+                //Reload the table after creating a new item
+                self.fetch_stock_data();
+                self.stock_sub_state = StockSubState::StockMain;
             },
             _ => {}
         }
