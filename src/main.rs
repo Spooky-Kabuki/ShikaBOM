@@ -9,6 +9,8 @@ mod parts_ui;
 mod stock;
 mod stock_ui;
 mod stock_view;
+mod projects;
+mod project_view;
 
 use app::App;
 
