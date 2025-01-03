@@ -64,6 +64,9 @@ impl ProjectsView {
                 self.sub_state = Main;
             }
             KeyCode::Tab => {
+                if self.selected_project_idx != self.project_list_state.selected().unwrap_or(0) {
+                    self.project_list_state.select(Some(self.selected_project_idx))
+                }
                 self.sub_state = BOMMode;
             }
             KeyCode::Enter => {
@@ -72,6 +75,7 @@ impl ProjectsView {
                         let project = &mut self.project_data[selected];
                         projects::fetch_project_details(project);
                         self.selected_project_idx = selected;
+                        self.sub_state = BOMMode;
                     }
                     None => {}
                 }
@@ -145,7 +149,7 @@ impl ProjectsView {
                 self.new_project_name_text.clear();
                 self.refresh_list();
                 self.select_last_idx();
-                self.sub_state = ListMode;
+                self.sub_state = BOMMode;
             }
             _ => {}
         }
