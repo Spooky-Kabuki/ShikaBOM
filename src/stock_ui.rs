@@ -49,7 +49,7 @@ pub fn render_main_stock_panel(f: &mut Frame, app: &App, rect: Rect) {
         // As any other widget, a Table can be wrapped in a Block.
         .block(Block::default().title("Stock Table"))
         // The selected row and its content can also be styled.
-        .highlight_style(selected_style)
+        .row_highlight_style(selected_style)
         // ...and potentially show a symbol in front of the selection.
         .highlight_symbol(">>");
     f.render_stateful_widget(table, rect, & mut app.stock_view.stock_table_state.clone());
@@ -86,7 +86,7 @@ pub fn render_create_stock_popup(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Black).fg(tailwind::EMERALD.c400));
 
-    let area = centered_rect(60, 35, f.size());
+    let area = centered_rect(60, 35, f.area());
     let clear = Clear::default();
     f.render_widget(clear, area);
     f.render_widget(popup_block, area);

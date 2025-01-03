@@ -2,6 +2,7 @@ use crossterm::event::KeyCode;
 use ratatui::widgets::TableState;
 use crate::parts;
 use crate::parts::Part;
+use crate::utils::ScrollBarInfo;
 
 pub enum PartsSubState {
     Main,
@@ -19,18 +20,6 @@ impl PartialEq for PartsSubState {
     }
 }
 
-pub struct PartScrollInfo {
-    pub scroll_position: usize,
-    pub scroll_length: u16
-}
-
-impl PartScrollInfo {
-    pub(crate) fn reset(&mut self) {
-        self.scroll_position = 0;
-        self.scroll_length = 0;
-    }
-}
-
 pub struct PartText {
     pub part_number: String,
     pub total_qty: String,
@@ -43,6 +32,19 @@ pub struct PartText {
 }
 
 impl PartText {
+
+    pub fn new() -> Self {
+        Self {
+            part_number: "".parse().unwrap(),
+            total_qty: "".parse().unwrap(),
+            manufacturer: "".parse().unwrap(),
+            package: "".parse().unwrap(),
+            label: "".parse().unwrap(),
+            value: "".parse().unwrap(),
+            tolerance: "".parse().unwrap(),
+            description: "".parse().unwrap()
+        }
+    }
     pub(crate) fn clear(&mut self) {
         self.part_number.clear();
         self.total_qty.clear();
@@ -93,7 +95,7 @@ pub struct PartsView {
     pub part_data: Vec<Part>,
     pub part_storage_data: Vec<parts::PartStorage>,
     pub show_details: bool,
-    pub part_scroll_info: PartScrollInfo,
+    pub part_scroll_info: ScrollBarInfo,
     //TODO: this might be better shared??? idk duplicate for now
     pub part_table_state: TableState,
 }
@@ -103,23 +105,11 @@ impl PartsView {
         PartsView {
             parts_sub_state: PartsSubState::Main,
             currently_editing_part: CurrentlyEditingPart::PartNumber,
-            part_text: PartText {
-                part_number: "".to_string(),
-                total_qty: "".to_string(),
-                manufacturer: "".to_string(),
-                package: "".to_string(),
-                label: "".to_string(),
-                value: "".to_string(),
-                tolerance: "".to_string(),
-                description: "".to_string(),
-            },
+            part_text: PartText::new(),
             part_data: Vec::new(),
             part_storage_data: Vec::new(),
             show_details: false,
-            part_scroll_info: PartScrollInfo {
-                scroll_position: 0,
-                scroll_length: 0,
-            },
+            part_scroll_info: ScrollBarInfo::new(),
             part_table_state: TableState::default(),
         }
     }
@@ -177,7 +167,7 @@ impl PartsView {
                         let fetched_part = parts::fetch_single_part(&selected_pn);
                         self.part_text.copy_from_db_part(&fetched_part);
                         self.part_storage_data = parts::fetch_part_storage_data(&selected_pn);
-                        self.part_scroll_info.reset();
+                        self.part_scroll_info.clear();
                         //Only show if we have data to display
                         self.show_details();
                     }

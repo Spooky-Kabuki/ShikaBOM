@@ -10,6 +10,7 @@ use crossterm::{
     }
 };
 use crate::parts_view::*;
+use crate::projects_view::{ProjectSubState, ProjectsView};
 use crate::stock_view::*;
 use crate::ui::ui;
 
@@ -23,6 +24,7 @@ pub struct App {
     pub current_screen: CurrentScreen,
     pub parts_view: PartsView,
     pub stock_view: StockView,
+    pub projects_view: ProjectsView,
     pub exit: bool,
 }
 impl App {
@@ -31,6 +33,7 @@ impl App {
             current_screen: CurrentScreen::PartScreen,
             parts_view: PartsView::new(),
             stock_view: StockView::new(),
+            projects_view: ProjectsView::new(),
             exit: false,
         }
     }
@@ -64,7 +67,9 @@ impl App {
             CurrentScreen::StockScreen => {
                 self.handle_storage_keys(key_event);
             }
-            _ => {}
+            CurrentScreen::ProjectScreen => {
+                self.handle_project_keys(key_event);
+            }
         }
         Ok(())
     }
@@ -108,6 +113,25 @@ impl App {
         }
     }
 
+    fn handle_project_keys(&mut self, key_event: KeyEvent) {
+        match self.projects_view.sub_state {
+            ProjectSubState::Main => {
+                if !self.handle_global_keys(key_event) {
+                    self.projects_view.handle_main_keys(key_event.code);
+                }
+            }
+            ProjectSubState::ListMode => {
+                self.projects_view.handle_list_mode_keys(key_event.code);
+            }
+            ProjectSubState::BOMMode => {
+                self.projects_view.handle_bom_mode_keys(key_event.code);
+            }
+            ProjectSubState::CreateNewProject => {
+                self.projects_view.handle_create_project_keys(key_event.code);
+            }
+        }
+    }
+
     // handles global key events when we don't want to override (e.g. quit)
     pub fn handle_global_keys(&mut self, key_event: KeyEvent) -> bool {
         match key_event.code {
@@ -124,6 +148,10 @@ impl App {
                 self.current_screen = CurrentScreen::PartScreen;
                 true
             },
+            KeyCode::Char('P') => {
+                self.current_screen = CurrentScreen::ProjectScreen;
+                true
+            }
             _ => {false}
         }
     }

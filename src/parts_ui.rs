@@ -47,7 +47,7 @@ pub fn render_main_parts_panel(f: &mut Frame, app: &App, rect: Rect) {
         // As any other widget, a Table can be wrapped in a Block.
         .block(Block::default().title("Table"))
         // The selected row and its content can also be styled.
-        .highlight_style(selected_style)
+        .row_highlight_style(selected_style)
         // ...and potentially show a symbol in front of the selection.
         .highlight_symbol(">>");
     //.border_style(Style::new().fg(Color::Cyan))
@@ -143,7 +143,7 @@ pub fn render_details_panel(f: &mut Frame, app: &App, panel: Rect) {
 
     f.render_stateful_widget(
         scrollbar,
-        panel.inner(&Margin {
+        panel.inner(Margin {
             // using an inner vertical margin of 1 unit makes the scrollbar inside the block
             vertical: 1,
             horizontal: 0,
@@ -164,7 +164,7 @@ pub fn render_new_part_popup(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Black));
 
-    let area = centered_rect(35, 60, f.size());
+    let area = centered_rect(35, 60, f.area());
     let clear = Clear::default();
     f.render_widget(clear, area);
     f.render_widget(popup_block, area);
@@ -241,7 +241,7 @@ pub(crate) fn side_panel_rect(f: &mut Frame) -> Rect {
             Constraint::Percentage(70),
             Constraint::Percentage(30),
         ])
-        .split(f.size());
+        .split(f.area());
     return layouts[1]
 }
 

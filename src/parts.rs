@@ -26,6 +26,11 @@ impl Part {
             tolerance: None,
         }
     }
+
+    pub fn new_from_pn(pn: &str) -> Part {
+        let part = fetch_single_part(pn);
+        part
+    }
 }
 
 pub struct PartStorage {
@@ -63,7 +68,7 @@ pub fn fetch_single_part(pn: &str) -> Part {
     let mut client = postgres_init();
     let row = client.query_one("select * from big_part_view where partnumber = $1", &[&pn]).unwrap();
     let part = new_part_from_sql(row);
-    return part;
+    part
 }
 
 //Does not include quantity, this is just part information

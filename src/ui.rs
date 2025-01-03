@@ -5,7 +5,7 @@ use ratatui::{
     widgets::*,
     Frame,
 };
-use crate::{parts_ui, parts_view, stock_view, stock_ui};
+use crate::{parts_ui, parts_view, stock_view, stock_ui, projects_ui};
 use crate::app::{App, CurrentScreen};
 
 pub fn ui(f: &mut Frame, app: &App) {
@@ -17,7 +17,7 @@ pub fn ui(f: &mut Frame, app: &App) {
             Constraint::Percentage(80),
             Constraint::Percentage(10),
         ])
-        .split(f.size());
+        .split(f.area());
 
     let header_chunk = chunks[0];
     let content_chunk = chunks[1];
@@ -81,8 +81,11 @@ pub fn ui(f: &mut Frame, app: &App) {
 
                 _ => {}
             }
+        },
+        CurrentScreen::ProjectScreen => {
+            projects_ui::render_main_panel(f, app, content_chunk);
+
         }
-        _ => {}
     }
 }
 
