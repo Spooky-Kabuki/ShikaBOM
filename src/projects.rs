@@ -1,4 +1,5 @@
 use postgres::Row;
+use tracing::{error, info};
 use crate::db;
 use crate::parts::Part;
 
@@ -65,4 +66,35 @@ fn project_part_from_row(row: Row) -> ProjectPart {
         part_info: Part::new_from_pn(&*pn)
     };
     new_part
+}
+
+pub fn fetch_pns_not_in_project(project: &Project) -> Vec<String> {
+    let query = "SELECT p.partnumber
+                        FROM parts p
+                        WHERE p.partnumber NOT IN (
+                            SELECT pc.partnumber
+                            FROM project_components pc
+                            WHERE pc.project_name = $1
+                        );";
+    let mut client = db::postgres_init();
+    let row_result = client.query(query, &[&project.name]);
+    let rows = row_result.unwrap_or_else(|e| {
+        error!("Error fetching data: {:?}", e);
+        Vec::new()
+    });
+    let mut ret_vec = vec![];
+    for row in rows {
+        match row.try_get("partnumber") {
+            Ok(val) => ret_vec.push(val),
+            Err(_) => ()
+        }
+    }
+    ret_vec
+}
+
+pub fn add_pn_to_project(project: &Project, ppart: &ProjectPart) {
+    let query = "insert into project_components (project_name, partnumber, designators, qty)
+        values ($1, $2, $3, $4)";
+    let mut client = db::postgres_init();
+    client.execute(query, &[&project.name, &ppart.partnumber, &ppart.designators, &ppart.qty]).unwrap();
 }

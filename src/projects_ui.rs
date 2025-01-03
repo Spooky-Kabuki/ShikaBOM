@@ -14,8 +14,9 @@ use ratatui::text::Text;
 use ratatui::widgets::{List, ListDirection, ListState};
 use tracing::info;
 use crate::app::App;
-use crate::projects_view::ProjectSubState;
+use crate::projects_view::{ATBFormField, ProjectSubState};
 use crate::ui::centered_rect;
+use crate::utils;
 
 pub fn render_main_panel(f: &mut Frame, app: &App, rect: Rect) {
     let layout = Layout::default()
@@ -28,6 +29,7 @@ pub fn render_main_panel(f: &mut Frame, app: &App, rect: Rect) {
     render_projects_list_panel(f, app, layout[0]);
     render_project_detail_panel(f, app, layout[1]);
     render_new_project_popup(f, app, rect);
+    render_add_part_to_bom_popup(f, app, rect);
 }
 
 fn render_projects_list_panel(f: &mut Frame, app: &App, rect: Rect) {
@@ -172,13 +174,77 @@ fn render_new_project_popup(f: &mut Frame, app: &App, rect: Rect) {
         .style(Style::default().bg(Color::Black).fg(tailwind::EMERALD.c400));
 
     let area = centered_rect(30, 15, rect);
-    let clear = Clear::default();
-    f.render_widget(clear, area);
-    f.render_widget(popup_block, area);
+    utils::render_popup_block(f, area, popup_block);
     let txt_b = Block::default().title("Enter Project Name: ")
         .borders(Borders::ALL)
         .border_style(get_block_border_style(true));
     let txt_t = Paragraph::new(app.projects_view.new_project_name_text.clone()).block(txt_b);
     f.render_widget(txt_t, area);
+}
+
+fn render_add_part_to_bom_popup(f: &mut Frame, app: &App, rect: Rect) {
+    if app.projects_view.sub_state != ProjectSubState::AddToBOM {return};
+
+    let popup_block = Block::default()
+        .title("Add PN to BOM:")
+        .borders(Borders::ALL)
+        .border_style(get_block_border_style(true));
+    let area = centered_rect(60, 50, rect);
+    utils::render_popup_block(f, area, popup_block);
+
+    let hori_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50)
+        ])
+        .split(area);
+    let pn_chunk = hori_chunks[0];
+    let form_chunk = hori_chunks[1];
+
+    let mut table_b = Block::default().title("Part Number").borders(Borders::ALL).border_style(get_block_border_style(false));
+    let mut desig_b = Block::default().title("Designators").borders(Borders::ALL);
+    let mut qty_b = Block::default().title("Qty").borders(Borders::ALL);
+
+    match app.projects_view.atb_form_data.currently_editing {
+        ATBFormField::PN => {
+            table_b = table_b.border_style(get_block_border_style(true));
+        }
+        ATBFormField::Designators => {
+            desig_b = desig_b.border_style(get_block_border_style(true));
+        }
+        ATBFormField::Qty => {
+            qty_b = qty_b.border_style(get_block_border_style(true));
+        }
+    }
+    let highlighted_style = Style::default()
+        .fg(tailwind::SLATE.c200)
+        .bg(tailwind::EMERALD.c900);
+    let items = app.projects_view.atb_form_data.pns_not_in_project.clone();
+    let list = List::new(items)
+        .block(table_b)
+        .style(Style::default())
+        .highlight_style(highlighted_style.add_modifier(Modifier::ITALIC))
+        .highlight_symbol(">>")
+        .repeat_highlight_symbol(true)
+        .direction(ListDirection::TopToBottom);
+
+    f.render_stateful_widget(list, pn_chunk, & mut app.projects_view.atb_form_data.pnip_list_state.clone());
+
+    let form_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage(50),
+            Constraint::Percentage(50)
+        ])
+        .split(form_chunk);
+
+    let desig_t = Paragraph::new(app.projects_view.atb_form_data.designators.clone()).block(desig_b);
+    let qty_t = Paragraph::new(app.projects_view.atb_form_data.qty.clone()).block(qty_b);
+
+    f.render_widget(desig_t, form_chunks[0]);
+    f.render_widget(qty_t, form_chunks[1]);
+
 }
 

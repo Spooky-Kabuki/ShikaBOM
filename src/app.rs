@@ -129,6 +129,9 @@ impl App {
             ProjectSubState::CreateNewProject => {
                 self.projects_view.handle_create_project_keys(key_event.code);
             }
+            ProjectSubState::AddToBOM => {
+                self.projects_view.handle_add_to_bom_keys(key_event.code);
+            }
         }
     }
 
