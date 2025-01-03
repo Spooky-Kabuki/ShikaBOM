@@ -1,5 +1,5 @@
 use crossterm::event::KeyCode;
-use ratatui::widgets::{ListState};
+use ratatui::widgets::{ListState, Table, TableState};
 use crate::projects;
 use crate::projects::{fetch_project_list, Project};
 use crate::projects_view::ProjectSubState::{BOMMode, CreateNewProject, ListMode, Main};
@@ -30,6 +30,7 @@ pub struct ProjectsView {
     pub selected_project_idx: usize,
     pub new_project_name_text: String,
     pub prj_lst_sbar_state: ScrollBarInfo,
+    pub bom_table_state: TableState,
 
 }
 
@@ -42,6 +43,7 @@ impl ProjectsView {
             selected_project_idx: 0,
             new_project_name_text: String::from(""),
             prj_lst_sbar_state: ScrollBarInfo::new(),
+            bom_table_state: TableState::default(),
         }
     }
 
@@ -129,6 +131,36 @@ impl ProjectsView {
             }
             KeyCode::Tab => {
                 self.sub_state = ListMode;
+            }
+            KeyCode::Up => {
+                let parts_list = &self.project_data[self.selected_project_idx].parts;
+                match self.bom_table_state.selected() {
+                    Some(selected) => {
+                        if selected > 0 && parts_list.len() > 0 {
+                            self.bom_table_state.select(Some(selected - 1));
+                        }
+                    }
+                    None => {
+                        if parts_list.len() > 0 {
+                            self.bom_table_state.select(Some(0));
+                        }
+                    }
+                }
+            }
+            KeyCode::Down => {
+                let parts_list = &self.project_data[self.selected_project_idx].parts;
+                match self.bom_table_state.selected() {
+                    Some(selected) => {
+                        if selected < parts_list.len() - 1 {
+                            self.bom_table_state.select(Some(selected + 1));
+                        }
+                    }
+                    None => {
+                        if parts_list.len() > 0 {
+                            self.bom_table_state.select(Some(0));
+                        }
+                    }
+                }
             }
             _ => {}
         }

@@ -115,7 +115,7 @@ fn render_project_detail_panel(f: &mut Frame, app: &App, rect: Rect) {
     //.borders(Borders::ALL);
     let refreshed_text = Text::from("Refreshed last at 2025-01-01 12:46")
         .style(Style::default().fg(Color::White));
-    f.render_widget(table, table_rect);
+    f.render_stateful_widget(table, table_rect, &mut app.projects_view.bom_table_state.clone());
     f.render_widget(refreshed_text, refreshed_rect);
 
 
@@ -144,7 +144,7 @@ fn get_block_style() -> Style {
     retval
 }
 
-fn create_project_table_rows(app: &App) -> Vec<Row<'static>> {
+fn create_project_table_rows(app: &App) -> Vec<Row> {
     let project = &app.projects_view.project_data.get(app.projects_view.selected_project_idx).unwrap();
     let mut rows: Vec<Row> = Vec::new();
     for part in &project.parts {
